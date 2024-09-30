@@ -1,8 +1,7 @@
 # TODO: Elements à analyser :
-# Netteté et détection de flou
-# Sur et sous exposition (histogramme de luminosité)
-# Stabilité et mouvements
-# Detection de bruit
+
+
+# Detection de bruit dans l'image
 # Analyse qualité de l'audio (faible, saturé, bruits de fonds)
 # Detection des niveaux sonores
 # Detection de bruit ambiant
@@ -11,11 +10,11 @@
 import numpy as np
 import cv2
 
-#########################################
-TODO:  # NETTETE ET DETECTION DE FLOU
-    ##########################################
+###############################
+# NETTETE ET DETECTION DE FLOU
+###############################
 
-    # Descencdre vers 80 pour détecter des flous faibles et augmenter vers 150 les flous grossiers
+# Descendre vers 80 pour détecter des flous faibles et augmenter vers 150 les flous grossiers
 
 
 def detect_flou(video_path, seuil_flou=100.0):
@@ -81,14 +80,146 @@ def detect_flou(video_path, seuil_flou=100.0):
 video_path = "Data/KoNViD_1k_videos/3339962845_floue.mp4"
 detect_flou(video_path, seuil_flou=100.0)
 
-##########################
+########################
 # SUR et SOUS EXPOSITION
-##########################
+########################
 
 
-# STABILITE ET MOUVEMENTS (YOLOv5 ? )
+def detect_exposition(video_path, seuil_concentration=70):
+    """Detecte les défauts de sur et sous exposition. La fonction analyse la concentration de l'histogramme des valeurs de niveaux de gris des pixels et décide si l'exposition est déséquilibrée en fonction d'un seuil de detection défini.
 
-# QUALITE DE L'AUDIO
+    Args:
+        video_path (_type_): chemin d'accès du fichier
+        seuil_concentration (int, optional): seuil de concentration pour déterminer l'anomalie. Defaults to 70.
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print("Erreur : Impossible de lire la vidéo.")
+        return
+
+    total_frames = 0
+    frames_sous_exposees = 0
+    frames_surexposees = 0
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break  # Fin de la vidéo
+
+        total_frames += 1
+
+        # Convertir la frame en niveaux de gris
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Calculer l'histogramme des niveaux de gris (256 bins pour les valeurs de 0 à 255)
+        hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
+
+        # Normaliser l'histogramme
+        hist = hist / hist.sum()
+
+        # Concentration des pixels dans les 10% inférieurs (pour sous-exposition)
+        sous_exposition = hist[:25].sum() * 100  # Premier 10% des valeurs
+        # Concentration des pixels dans les 10% supérieurs (pour surexposition)
+        surexposition = hist[230:].sum() * 100  # Dernier 10% des valeurs
+
+        # Vérifier la concentration
+        if sous_exposition > seuil_concentration:
+            frames_sous_exposees += 1
+        elif surexposition > seuil_concentration:
+            frames_surexposees += 1
+
+    # Calculer les pourcentages de frames sous/surexposées
+    pourcentage_sous_exposees = (
+        frames_sous_exposees / total_frames) * 100 if total_frames > 0 else 0
+    pourcentage_surexposees = (
+        frames_surexposees / total_frames) * 100 if total_frames > 0 else 0
+
+    print(f"Vidéo : {video_path}")
+    print(f"Total frames : {total_frames}")
+    print(
+        f"Frames sous-exposées : {frames_sous_exposees} ({pourcentage_sous_exposees:.2f}%)")
+    print(
+        f"Frames surexposées : {frames_surexposees} ({pourcentage_surexposees:.2f}%)")
+
+    cap.release()
+
+
+detect_exposition(video_path, seuil_concentration=70)
+
+############
+# STABILITE
+############
+
+
+def detect_stabilite(video_path, seuil_mouvement=2.0):
+    """Detecte la stabilité globale d'une vidéo
+
+    Args:
+        video_path (_type_): chemin d'accès au fichier
+        seuil_mouvement (float, optional): Sensibilité de la détection de tremblements. un seuil bas entraîne une détection plus stricte. Defaults to 2.0. 
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print("Erreur : Impossible de lire la vidéo.")
+        return
+
+    ret, prev_frame = cap.read()
+    if not ret:
+        print("Erreur : Impossible de lire la première frame.")
+        return
+
+    # Convertir la première frame en niveaux de gris
+    prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+
+    total_frames = 0
+    frames_instables = 0
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        total_frames += 1
+
+        # Convertir la frame actuelle en niveaux de gris
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Calculer l'optical flow entre la frame précédente et la frame actuelle
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
+        # Calculer la magnitude des vecteurs de déplacement (intensité du mouvement)
+        magnitude, angle = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+
+        # Calculer la magnitude moyenne pour voir si les mouvements sont importants
+        magnitude_mean = np.mean(magnitude)
+
+        # Si la magnitude moyenne dépasse un seuil, la frame est considérée comme instable
+        if magnitude_mean > seuil_mouvement:
+            frames_instables += 1
+
+        # La frame actuelle devient la précédente pour la prochaine itération
+        prev_gray = gray
+
+    # Calculer le pourcentage de frames instables
+    pourcentage_instables = (
+        frames_instables / total_frames) * 100 if total_frames > 0 else 0
+    video_instable = pourcentage_instables > 50
+
+    print(f"Vidéo : {video_path}")
+    print(f"Total frames : {total_frames}")
+    print(
+        f"Frames instables : {frames_instables} ({pourcentage_instables:.2f}% instables)")
+    print(f" Video instable : {'Oui' if video_instable else 'Non'}")
+
+    cap.release()
+
+
+# Exemple d'utilisation
+video_path = "Data/KoNViD_1k_videos/3321308714.mp4"
+detect_stabilite(video_path, seuil_mouvement=0.5)
+
+# TODO: QUALITE DE L'AUDIO
 
 # DETECTION DE BRUIT AMBIANT (DL)
 
