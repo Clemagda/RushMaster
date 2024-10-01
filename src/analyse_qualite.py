@@ -1,12 +1,13 @@
 # TODO: Elements à analyser :
 
-
-# Detection de bruit dans l'image
 # Analyse qualité de l'audio (faible, saturé, bruits de fonds)
 # Detection des niveaux sonores
 # Detection de bruit ambiant
 # Compression vidéo excessive: trop compressé = perte de qualité
 
+from pymediainfo import MediaInfo
+import moviepy.editor as mp
+import librosa
 import numpy as np
 import cv2
 
@@ -219,8 +220,117 @@ def detect_stabilite(video_path, seuil_mouvement=2.0):
 video_path = "Data/KoNViD_1k_videos/3321308714.mp4"
 detect_stabilite(video_path, seuil_mouvement=0.5)
 
-# TODO: QUALITE DE L'AUDIO
+# QUALITE DE L'AUDIO
+video_path_audio = "Data/KoNViD_1k_videos/3359662128.mp4"
 
-# DETECTION DE BRUIT AMBIANT (DL)
+# Analyse des niveaux sonores
 
-# DETECTION DE COMPRESSION EXCESSIVE
+
+def analyser_niveaux_sonores(video_path, seuil_faible=-30.0, seuil_sature=-3.0):
+    # Extraire l'audio de la vidéo
+    clip = mp.VideoFileClip(video_path)
+    audio_path = "temp_audio.wav"
+    if audio_path is None:
+        print('Aucun audio détecté')
+    else:
+        clip.audio.write_audiofile(audio_path)
+
+        # Charger l'audio avec Librosa
+        y, sr = librosa.load(audio_path)
+
+        # Calculer les niveaux sonores (dB)
+        rms = librosa.feature.rms(y=y)
+        db = librosa.amplitude_to_db(rms, ref=np.max)
+
+        # Analyser les niveaux faibles ou saturés
+        frames_faibles = (db < seuil_faible).sum()
+        frames_satures = (db > seuil_sature).sum()
+
+        total_frames = len(db[0])
+        pourcentage_faible = (frames_faibles / total_frames) * 100
+        pourcentage_sature = (frames_satures / total_frames) * 100
+
+        print(f"Vidéo : {video_path}")
+        print(f"Total frames audio : {total_frames}")
+        print(f"Frames audio trop faibles : {pourcentage_faible:.2f}%")
+        print(f"Frames audio saturées : {pourcentage_sature:.2f}%")
+
+
+# Exemple d'utilisation
+analyser_niveaux_sonores(
+    video_path_audio, seuil_faible=-30.0, seuil_sature=-3.0)
+
+
+# FIXME: DETECTION DE COMPRESSION EXCESSIVE
+
+# Extraction du bitrate de la vidéo
+
+
+def get_bitrate_mediainfo(video_path):
+    # Obtenir les informations sur la vidéo
+    media_info = MediaInfo.parse(video_path)
+
+    # Parcourir les pistes pour trouver la piste vidéo
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            return track.bit_rate  # Retourne le bitrate en bits par seconde
+
+    return "Bitrate non trouvé"
+
+
+# Exemple d'utilisation
+
+bitrate = get_bitrate_mediainfo(video_path)
+print(f"Bitrate de la vidéo : {bitrate} bps")
+
+# =====================================================
+# Valeurs de références pour la compression d'une vidéo
+# 720p (HD) : 1 500 - 3 000 kbps
+# 1080p(Full HD): 3 000 - 6 000 kbps
+# 4K(Ultra HD): 8 000 - 15 000 kbps
+# ======================================================
+
+
+def get_resolution(video_path):
+    media_info = MediaInfo.parse(video_path)
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            return track.width, track.height
+    return None, None
+
+
+def detect_compression_excessive(video_path):
+    # Obtenir le bitrate
+    bitrate = get_bitrate_mediainfo(video_path)
+
+    # Obtenir la résolution
+    width, height = get_resolution(video_path)
+
+    if width is None or height is None:
+        print("Impossible de déterminer la résolution de la vidéo.")
+        return
+
+    # Déterminer le seuil de bitrate selon la résolution
+    if height <= 720:
+        seuil_bitrate = 1500  # 1500 kbps pour 720p
+    elif height <= 1080:
+        seuil_bitrate = 3000  # 3000 kbps pour 1080p
+    elif height <= 2160:
+        seuil_bitrate = 8000  # 8000 kbps pour 4K
+    else:
+        print("Résolution non prise en charge.")
+        return
+
+    # Comparer le bitrate avec le seuil
+    # Convertir kbps en bps pour comparaison
+    if bitrate and int(bitrate) < seuil_bitrate * 1000:
+        print(
+            f"Compression excessive détectée : Bitrate {bitrate} bps trop faible pour {height}p.")
+    else:
+        print(
+            f"La compression semble correcte : Bitrate {bitrate} bps pour {height}p.")
+
+# Exemple d'utilisation
+
+
+detect_compression_excessive(video_path)
