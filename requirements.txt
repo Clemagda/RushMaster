@@ -1,7 +1,6 @@
 pytest
 opencv-python
 librosa
-os
 pymediainfo
 moviepy
 numpy
