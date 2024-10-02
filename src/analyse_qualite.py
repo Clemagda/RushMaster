@@ -1,3 +1,6 @@
+# TODO: Créer tests automatisés pour vérifier fonctionnement du script. Et si possible ajouter workflow github avant de passer au script d'anallyse des doublons.
+
+
 import cv2
 import numpy as np
 import librosa
@@ -124,7 +127,7 @@ def detect_compression_excessive(video_path):
     else:
         return False
 
-    return int(x=bitrate) > seuil_bitrate * 1000
+    return int(bitrate) > seuil_bitrate * 1000
 
 ########################
 # SUR et SOUS EXPOSITION
