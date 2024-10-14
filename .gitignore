@@ -1,4 +1,6 @@
 Data
 .venv
 Outputs
-VILA
+liuhaotian
+slowfast_llava/llava/_pycache_
+src/_pycache_
