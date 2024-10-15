@@ -169,6 +169,7 @@ def run_transcription(video_path, language='en', output_dir="Outputs", output_na
             os.remove(audio_output_path)
         if os.path.exists(audio_converted_path):
             os.remove(audio_converted_path)
+    return {"transcript": transcription, "transcription_path":output_path}
 
 # Fonction pour choisir le modèle Vosk en fonction de la langue
 def get_vosk_model_path(language):

@@ -144,6 +144,7 @@ def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv
         with open(output_path, "w") as output_file:
             output_file.write(summary)
         print(f"Résumé sauvegardé dans : {output_path}")
+    return {"summary":summary, "summary_path":output_path}
 
 # Parser des arguments pour la ligne de commande
 def parse_args():

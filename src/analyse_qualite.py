@@ -370,10 +370,24 @@ def run_quality_analysis(video_path, seuil_flou=100.0, seuil_faible=-30.0, seuil
     resultats_audio = analyser_niveaux_sonores(video_path, seuil_faible=seuil_faible, seuil_sature=seuil_sature)
     if 'error' in resultats_audio:
         print(resultats_audio['error'])
+        audio_results=None
     else:
         print(f"Frames audio faibles : {resultats_audio['pourcentage_faible']:.2f}%")
         print(f"Frames audio saturées : {resultats_audio['pourcentage_sature']:.2f}%")
-
+        audio_result = {
+            "pourcentage_faible": resultats_audio['pourcentage_faible'],
+            "pourcentage_sature": resultats_audio['pourcentage_sature']
+        }
+        
+    return {
+        "Flou": 'Flou' if resultat_flou else 'Non flou',
+        "Pourcentage_flou": pourcentage_flou,
+        "Stabilite": 'Stable' if resultat_stabilite else 'Instable',
+        "Frames_surexposees": resultats_exposition.get('pourcentage_surexposees', None),
+        "Frames_sousexposees": resultats_exposition.get('pourcentage_sousexposees', None),
+        "Compression": 'Excessive' if resultat_compression else 'OK',
+        "Audio": audio_results
+    }
 
 def parse_args():
     """
