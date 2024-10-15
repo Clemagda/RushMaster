@@ -1,12 +1,11 @@
-Data
-.venv
+
 Outputs
+.pytest_cache
+playground
 liuhaotian
 slowfast_llava/llava/_pycache_
 src/_pycache_
-
+Outputs
 #Modèles Vosk
 Vosk
-audio_extracted.wav
-audio_converted.wav
-test_transcription-1.txt
+
