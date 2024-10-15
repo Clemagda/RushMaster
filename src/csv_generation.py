@@ -1,10 +1,10 @@
 import csv
 import os
-from analyse_qualite import run_quality_analysis  # Import de la fonction d'analyse de la qualité
-from generation_resume import run_inference  # Import de la fonction de génération de résumé
-from transcription_audio import transcribe_audio  # Import de la fonction de transcription audio
+from analyse_qualite import run_quality_analysis  
+from generation_resume import run_inference  
+from transcription_audio import run_transcription
 
-def create_csv_output(video_files, output_csv, output_dir, language="en"):
+def create_csv_output(video_files, output_csv, output_dir="Outputs", language="en"):
     """
     Fusionne les résultats des trois scripts dans un fichier CSV.
     
@@ -16,7 +16,7 @@ def create_csv_output(video_files, output_csv, output_dir, language="en"):
     """
     with open(output_csv, mode='w', newline='', encoding='utf-8') as csv_file:
         # Définition des en-têtes des colonnes
-        fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_resume']
+        fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_summary']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         
         # Écrire les en-têtes
@@ -26,27 +26,43 @@ def create_csv_output(video_files, output_csv, output_dir, language="en"):
         for video in video_files:
             video_id = os.path.basename(video).split('.')[0]  # Utiliser le nom du fichier sans extension
 
+        try:
             # Appeler les fonctions des scripts individuels
             quality_analysis = run_quality_analysis(video)  # Appel de l'analyse de la qualité
-            audio_transcription = transcribe_audio(video, language)  # Appel de la transcription audio
+            audio_transcription = run_transcription(video, language)  # Appel de la transcription audio
             video_resume = run_inference(video, output_dir, video_id)  # Appel de la génération de résumés
+
+            # S'assurer que les fonctions renvoient des résultats avant d'insérer dans le CSV
+            if not quality_analysis:
+                quality_analysis = "Erreur lors de l'analyse de la qualité"
+            if not audio_transcription:
+                audio_transcription = "Erreur lors de la transcription audio"
+            if not video_resume:
+                video_resume = "Erreur lors de la génération du résumé vidéo"
 
             # Écrire les résultats dans une ligne du CSV
             writer.writerow({
                 'video_id': video_id,
                 'quality_analysis': quality_analysis,
                 'audio_transcription': audio_transcription,
-                'video_resume': video_resume
+                'video_summary': video_resume
             })
-
+        except Exception as e:
+            print(f"Erreur lors du traitement de la video {video_id} : {e}")
+            writer.writerow({
+                'video_id': video_id,
+                'quality_analysis': "Erreur.",
+                'audio_transcription': "Erreur.",
+                'video_summary': "Erreur."
+            })
+            
     print(f"Les résultats ont été fusionnés et sauvegardés dans : {output_csv}")
 
 # Exemple d'utilisation
-def main():
+def create_csv_file():
     video_files = [
-        "/path/to/video1.mp4",
-        "/path/to/video2.mp4",
-        "/path/to/video3.mp4"
+        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all:video10.mp4",
+        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all:video12.mp4",
     ]
 
     # Chemin du fichier CSV de sortie
@@ -60,4 +76,4 @@ def main():
     create_csv_output(video_files, output_csv, output_dir, language)
 
 if __name__ == "__main__":
-    main()
+    create_csv_file()
