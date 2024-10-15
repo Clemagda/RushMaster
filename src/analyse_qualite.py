@@ -9,12 +9,12 @@ import os
 from pymediainfo import MediaInfo
 import argparse
 import tempfile
-
+from moviepy.editor import VideoFileClip
 
 ###############################
 # NETTETE ET DETECTION DE FLOU
 ###############################
-from moviepy.editor import VideoFileClip
+
 # Descendre vers 80 pour détecter des flous faibles et augmenter vers 150 les flous grossiers
 def detect_flou(video_path, seuil_flou=100.0):
     """
@@ -303,35 +303,57 @@ def analyser_niveaux_sonores(video_path, seuil_faible=-30.0, seuil_sature=-3.0):
     finally:
         if os.path.exists(audio_path):
             os.remove(audio_path)
-def main():
-    parser = argparse.ArgumentParser(description="Analyse complète de la qualité d'une vidéo")
-    parser.add_argument("--video_path", type=str, required=True, help="Chemin vers la vidéo à analyser")
-    parser.add_argument("--seuil_flou", type=float, default=100.0, help="Seuil de détection du flou (80 à 150)")
-    parser.add_argument("--seuil_faible", type=float, default=-30.0, help="Seuil de volume faible en dB")
-    parser.add_argument("--seuil_sature", type=float, default=-3.0, help="Seuil de saturation en dB")
-    parser.add_argument("--seuil_stabilite", type=float, default=2.0, help="Seuil de détection de la stabilité (moyenne des flux optiques)")
-    parser.add_argument("--seuil_surexpose", type=int, default=230, help="Seuil pour la surexposition")
-    parser.add_argument("--seuil_sousexpose", type=int, default=30, help="Seuil pour la sous-exposition")
 
-    args = parser.parse_args()
 
+
+def run_quality_analysis(video_path, seuil_flou=100.0, seuil_faible=-30.0, seuil_sature=-3.0, seuil_stabilite=2.0, seuil_surexpose=230, seuil_sousexpose=30):
+    """
+    Effectue une analyse complète de la qualité d'une vidéo en évaluant plusieurs paramètres : flou, stabilité, exposition, compression, et audio.
+
+    Args:
+        video_path (str): Chemin vers la vidéo à analyser.
+        seuil_flou (float): Seuil de détection du flou (par défaut 100.0, valeurs recommandées entre 80 et 150).
+        seuil_faible (float): Seuil de volume faible en dB pour l'analyse audio (par défaut -30.0 dB).
+        seuil_sature (float): Seuil de saturation audio en dB pour l'analyse audio (par défaut -3.0 dB).
+        seuil_stabilite (float): Seuil de détection de la stabilité basé sur les flux optiques (par défaut 2.0).
+        seuil_surexpose (int): Seuil de détection de la surexposition en intensité (par défaut 230).
+        seuil_sousexpose (int): Seuil de détection de la sous-exposition en intensité (par défaut 30).
+
+    Raises:
+        FileNotFoundError: Si la vidéo spécifiée est introuvable ou ne peut pas être lue.
+        ValueError: Si une erreur se produit lors de l'analyse des paramètres de qualité.
+
+    Returns:
+        None: La fonction affiche les résultats de chaque analyse (flou, stabilité, exposition, compression, et audio) dans la console, mais ne retourne pas de valeur.
+
+    Steps:
+        1. Vérifie que la vidéo est lisible.
+        2. Analyse le pourcentage de frames floues et détermine si la vidéo est floue selon le seuil fourni.
+        3. Évalue la stabilité de la vidéo en fonction du seuil de stabilité.
+        4. Analyse l'exposition de la vidéo et affiche les pourcentages de frames surexposées et sous-exposées.
+        5. Vérifie si la vidéo présente une compression excessive.
+        6. Analyse les niveaux sonores de la vidéo pour déterminer les pourcentages de frames ayant un audio trop faible ou saturé.
+
+    Example:
+        run_quality_analysis("video.mp4", seuil_flou=120.0, seuil_faible=-25.0, seuil_stabilite=1.5)
+    """
     # Vérification que la vidéo peut être lue
-    if not check_video_readable(args.video_path):
+    if not check_video_readable(video_path):
         return  # Arrête le script si la vidéo ne peut pas être lue
 
     # Analyse du flou
     print("\n=== Analyse du flou ===")
-    resultat_flou, pourcentage_flou = detect_flou(args.video_path, seuil_flou=args.seuil_flou)
+    resultat_flou, pourcentage_flou = detect_flou(video_path, seuil_flou=seuil_flou)
     print(f"Résultat : {'Flou' if resultat_flou else 'Non flou'}, {pourcentage_flou:.2f}% des frames floues.")
 
     # Analyse de la stabilité
     print("\n=== Analyse de la stabilité ===")
-    resultat_stabilite = detect_stabilite(args.video_path, seuil_stabilite=args.seuil_stabilite)
+    resultat_stabilite = detect_stabilite(video_path, seuil_stabilite=seuil_stabilite)
     print(f"Vidéo stable : {'Oui' if resultat_stabilite else 'Non'}.")
 
     # Analyse de l'exposition
     print("\n=== Analyse de l'exposition ===")
-    resultats_exposition = detect_exposition(args.video_path, seuil_surexpose=args.seuil_surexpose, seuil_sousexpose=args.seuil_sousexpose)
+    resultats_exposition = detect_exposition(video_path, seuil_surexpose=seuil_surexpose, seuil_sousexpose=seuil_sousexpose)
     if 'error' in resultats_exposition:
         print(resultats_exposition['error'])
     else:
@@ -340,17 +362,41 @@ def main():
 
     # Analyse de la compression
     print("\n=== Analyse de la compression ===")
-    resultat_compression = detect_compression_excessive(args.video_path)
+    resultat_compression = detect_compression_excessive(video_path)
     print(f"Vidéo trop compressée : {'Oui' if resultat_compression else 'Non'}.")
 
     # Analyse de l'audio
     print("\n=== Analyse des niveaux sonores ===")
-    resultats_audio = analyser_niveaux_sonores(args.video_path, seuil_faible=args.seuil_faible, seuil_sature=args.seuil_sature)
+    resultats_audio = analyser_niveaux_sonores(video_path, seuil_faible=seuil_faible, seuil_sature=seuil_sature)
     if 'error' in resultats_audio:
         print(resultats_audio['error'])
     else:
         print(f"Frames audio faibles : {resultats_audio['pourcentage_faible']:.2f}%")
         print(f"Frames audio saturées : {resultats_audio['pourcentage_sature']:.2f}%")
 
+
+def parse_args():
+    """
+    Parse les arguments de la ligne de commande.
+    """   
+    parser = argparse.ArgumentParser(description="Analyse complète de la qualité d'une vidéo")
+    parser.add_argument("--video_path", type=str, required=True, help="Chemin vers la vidéo à analyser")
+    parser.add_argument("--seuil_flou", type=float, default=100.0, help="Seuil de détection du flou (80 à 150)")
+    parser.add_argument("--seuil_faible", type=float, default=-30.0, help="Seuil de volume faible en dB")
+    parser.add_argument("--seuil_sature", type=float, default=-3.0, help="Seuil de saturation en dB")
+    parser.add_argument("--seuil_stabilite", type=float, default=2.0, help="Seuil de détection de la stabilité (moyenne des flux optiques)")
+    parser.add_argument("--seuil_surexpose", type=int, default=230, help="Seuil pour la surexposition")
+    parser.add_argument("--seuil_sousexpose", type=int, default=30, help="Seuil pour la sous-exposition")
+    return parser.parse_args()
+
 if __name__=="__main__":
-    main()
+    args = parse_args()
+    run_quality_analysis(
+        args.video_path,
+        args.seuil_flou,
+        args.seuil_faible,
+        args.seuil_sature,
+        args.seuil_stabilite,
+        args.seuil_surexpose,
+        args.seuil_sousexpose
+    )

@@ -62,12 +62,45 @@ def llava_inference(video_frames,
     return summary
 
 # Fonction principale pour exécuter l'inférence et générer le résumé pour une seule vidéo
-def run_inference(args):
+def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv_mode='vicuna_v1',
+                  model_base=None,
+                  question="Describe this video in details",
+                  num_frames=16,temperature=0.2,
+                  top_p=None,num_beams=1,temporal_aggregation=None,output_dir='Outputs',output_name='generated_resume',rope_scaling_factor=1):
     """
-    Générer un résumé vidéo à partir d'une seule vidéo.
+    Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
 
     Args:
-        args: Arguments passés par la ligne de commande.
+        video_path (str): Chemin vers la vidéo à analyser.
+        model_path (str): Chemin vers le modèle pré-entraîné à utiliser pour l'inférence (par défaut 'liuhaotian/llava-v1.6-vicuna-7b').
+        conv_mode (str): Mode de conversation à utiliser avec le modèle (par défaut 'vicuna_v1').
+        model_base (str or None): Base de modèle à utiliser, si applicable (par défaut None).
+        question (str): Question à poser au modèle pour générer le résumé vidéo (par défaut "Describe this video in details").
+        num_frames (int): Nombre total de frames à utiliser pour l'analyse vidéo (par défaut 16).
+        temperature (float): Température pour l'échantillonnage lors de la génération du résumé (par défaut 0.2).
+        top_p (float or None): Valeur du paramètre top-p pour le tri des résultats d'inférence (par défaut None).
+        num_beams (int): Nombre de faisceaux à utiliser pour la recherche de faisceaux (beam search) lors de la génération du résumé (par défaut 1).
+        temporal_aggregation (str or None): Méthode d'agrégation temporelle des frames vidéo (par défaut None).
+        output_dir (str): Répertoire où sauvegarder le résumé généré (par défaut 'Outputs').
+        output_name (str): Nom du fichier de sortie pour le résumé (par défaut 'generated_resume').
+        rope_scaling_factor (float): Facteur de mise à l'échelle pour le positionnement relatif (rope scaling) (par défaut 1).
+
+    Raises:
+        FileNotFoundError: Si le chemin de la vidéo ou du modèle n'existe pas.
+        ValueError: Si une erreur survient lors du chargement des frames vidéo ou du modèle.
+
+    Returns:
+        None: La fonction affiche le résumé généré dans la console et le sauvegarde dans un fichier texte si `output_dir` est spécifié.
+
+    Steps:
+        1. Charge le modèle pré-entraîné, le tokenizer et l'image processor.
+        2. Charge les frames de la vidéo spécifiée.
+        3. Génère un résumé vidéo en utilisant l'inférence du modèle et une question spécifique.
+        4. Affiche le résumé généré dans la console.
+        5. Sauvegarde le résumé dans un fichier texte si le chemin de sortie est fourni.
+
+    Example:
+        run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b", question="Describe the actions in this video", num_frames=20)
     """
     # Charger le tokenizer, modèle et image processor
     model_path = os.path.expanduser(args.model_path)
@@ -119,7 +152,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="Générer un résumé vidéo pour une seule vidéo.")
     parser.add_argument("--video_path", help="Chemin vers la vidéo", required=True)
-    parser.add_argument("--model_path", type=str, required=True, help="Chemin vers le modèle LLaVA")
+    parser.add_argument("--model_path", type=str, default='liuhaotian/llava-v1.6-vicuna-7b', help="Chemin vers le modèle LLaVA")
     parser.add_argument("--conv_mode", type=str, default="vicuna_v1")
     parser.add_argument("--model_base", type=str, default=None, help="Base du modèle")
     parser.add_argument("--question", type=str, default="Describe this video in details")
@@ -135,4 +168,16 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    run_inference(args)
+    run_inference(args.video_path,
+                  args.model_path,
+                  args.conv_mode,
+                  args.model_base,
+                  args.question,
+                  args.num_frames,
+                  args.temperature,
+                  args.top_p,
+                  args.num_beams,
+                  args.temporal_aggregation,
+                  args.output_dir,
+                  args.output_name,
+                  args.rope_scaling_factor)
