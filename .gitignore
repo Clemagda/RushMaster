@@ -4,3 +4,9 @@ Outputs
 liuhaotian
 slowfast_llava/llava/_pycache_
 src/_pycache_
+
+#Modèles Vosk
+Vosk
+audio_extracted.wav
+audio_converted.wav
+test_transcription-1.txt
