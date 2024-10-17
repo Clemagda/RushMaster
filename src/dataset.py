@@ -39,7 +39,7 @@ def load_video(video_path, num_clips=1, num_frms=4):
 
     Parameters:
     video_path (str): Path to the video file.
-    num_clips (int): Number of clips to extract from the video. Defaults to 1.
+    num_clips (int): Number of clips to extract from the video. Defaults to 1. #num_clips permet de diviser la vidéo en plusieurs segments (scènes). Permet de décrire chaque scène plutot que la majoritaire.
     num_frms (int): Number of frames to extract from each clip. Defaults to 4.
 
     Returns:

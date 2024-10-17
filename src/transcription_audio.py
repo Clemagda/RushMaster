@@ -5,6 +5,9 @@ from vosk import Model, KaldiRecognizer
 from moviepy.editor import VideoFileClip
 import subprocess
 import tempfile
+import logging
+
+logging.getLogger('vosk').setLevel(logging.ERROR)
 
 # Fonction pour extraire l'audio d'une vidéo dans un fichier temporaire
 def extract_audio_from_video(video_path):
@@ -138,6 +141,7 @@ def run_transcription(video_path, language='en', output_dir="Outputs", output_na
         run_transcription("video.mp4", language='fr', output_dir="Transcriptions", output_name="video1_transcript")
     """
     # Sélectionner le modèle Vosk en fonction de la langue
+    print("#=== Transcription audio...===")
     vosk_model_path = get_vosk_model_path(language)
 
     try:

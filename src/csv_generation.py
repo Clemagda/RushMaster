@@ -19,50 +19,51 @@ def create_csv_output(video_files, output_csv, output_dir="Outputs", language="e
         fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_summary']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         
-        # Écrire les en-têtes
-        writer.writeheader()
+        if csv_file.tell() ==0:
+            writer.writeheader()
 
         # Parcourir chaque fichier vidéo
         for video in video_files:
             video_id = os.path.basename(video).split('.')[0]  # Utiliser le nom du fichier sans extension
 
-        try:
-            # Appeler les fonctions des scripts individuels
-            quality_analysis = run_quality_analysis(video)  # Appel de l'analyse de la qualité
-            audio_transcription = run_transcription(video, language)  # Appel de la transcription audio
-            video_resume = run_inference(video, output_dir, video_id)  # Appel de la génération de résumés
+            try:
+                # Appeler les fonctions des scripts individuels
+                video_output_dir = os.path.join(output_dir, video_id)
+                os.makedirs(video_output_dir, exist_ok=True)
+                quality_analysis = run_quality_analysis(video) 
+                audio_transcription = run_transcription(video, language)  
+                video_resume = run_inference(video)  
 
-            # S'assurer que les fonctions renvoient des résultats avant d'insérer dans le CSV
-            if not quality_analysis:
-                quality_analysis = "Erreur lors de l'analyse de la qualité"
-            if not audio_transcription:
-                audio_transcription = "Erreur lors de la transcription audio"
-            if not video_resume:
-                video_resume = "Erreur lors de la génération du résumé vidéo"
+                if not quality_analysis:
+                    quality_analysis = "Erreur lors de l'analyse de la qualité"
+                if not audio_transcription:
+                    audio_transcription = "Erreur lors de la transcription audio"
+                if not video_resume:
+                    video_resume = "Erreur lors de la génération du résumé vidéo"
 
-            # Écrire les résultats dans une ligne du CSV
-            writer.writerow({
-                'video_id': video_id,
-                'quality_analysis': quality_analysis,
-                'audio_transcription': audio_transcription,
-                'video_summary': video_resume
-            })
-        except Exception as e:
-            print(f"Erreur lors du traitement de la video {video_id} : {e}")
-            writer.writerow({
-                'video_id': video_id,
-                'quality_analysis': "Erreur.",
-                'audio_transcription': "Erreur.",
-                'video_summary': "Erreur."
-            })
+                # Écrire les résultats dans une ligne du CSV
+                writer.writerow({
+                    'video_id': video_id,
+                    'quality_analysis': quality_analysis,
+                    'audio_transcription': audio_transcription,
+                    'video_summary': video_resume
+                })
+            except Exception as e:
+                print(f"Erreur lors du traitement de la video {video_id} : {e}")
+                writer.writerow({
+                    'video_id': video_id,
+                    'quality_analysis': "Erreur.",
+                    'audio_transcription': "Erreur.",
+                    'video_summary': "Erreur."
+                })
             
-    print(f"Les résultats ont été fusionnés et sauvegardés dans : {output_csv}")
+    print(f"Le rapport est disponible dans : {output_csv}")
 
 # Exemple d'utilisation
 def create_csv_file():
     video_files = [
-        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all:video10.mp4",
-        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all:video12.mp4",
+        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all/video10.mp4",
+        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all/video12.mp4",
     ]
 
     # Chemin du fichier CSV de sortie

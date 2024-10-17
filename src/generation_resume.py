@@ -8,18 +8,6 @@ from dataset import load_video
 from prompt import get_prompt
 from moviepy.editor import VideoFileClip
 
-"""Genère le résumé textuel d'une vidéos avec possibilité de sauvegarder la sortie dans un fichier.
-Le résumé ne traite pas (encore) l'audio et se base sur les comportements et l'environnement des personnages. 
-
-    Ex: "In this video, we see a man in a suit standing in an office environment.
-    He appears to be in a conversation or presentation, as suggested by his gestures and the attentive expressions of the people around him.
-    The office setting includes other individuals, some of whom are seated at desks, and there are various office items visible,
-    such as a computer monitor and a handbag. The man in the suit is the central figure,
-    and his actions and expressions suggest a professional context, possibly related to business or corporate matters"
-
-Returns:
-    Résumé textuel dans la console de commande. Ou sauvegarde dans un fichier .txt ou .csv
-"""
 
 def get_total_frames(video_path):
     video = VideoFileClip(video_path)
@@ -65,7 +53,7 @@ def llava_inference(video_frames,
 def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv_mode='vicuna_v1',
                   model_base=None,
                   question="Describe this video in details",
-                  num_frames=16,temperature=0.2,
+                  num_frames=50,temperature=0.2,
                   top_p=None,num_beams=1,temporal_aggregation=None,output_dir='Outputs',output_name='generated_resume',rope_scaling_factor=1):
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
@@ -102,49 +90,50 @@ def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv
     Example:
         run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b", question="Describe the actions in this video", num_frames=20)
     """
+    print("===Génération du résumé===")
     # Charger le tokenizer, modèle et image processor
-    model_path = os.path.expanduser(args.model_path)
+    model_path = os.path.expanduser(model_path)
     model_name =  get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(
         model_path,
-        args.model_base,
+        model_base,
         model_name,
         device=torch.cuda.current_device(),
         device_map="cuda",
-        rope_scaling_factor=args.rope_scaling_factor,
+        rope_scaling_factor=rope_scaling_factor,
     )
 
     #num_frames =  get_total_frames(args.video_path)
     
     # Chargement des frames de la vidéo spécifique
-    video_frames, sizes = load_video(args.video_path, num_frms=args.num_frames)
+    video_frames, sizes = load_video(video_path, num_frms=num_frames)
 
     # Génération du résumé
     summary = llava_inference(
         video_frames,
-        args.question,
-        args.conv_mode,
+        question,
+        conv_mode,
         model,
         tokenizer,
         image_processor,
         sizes,
-        args.temperature,
-        args.top_p,
-        args.num_beams,
-        args.temporal_aggregation,
+        temperature,
+        top_p,
+        num_beams,
+        temporal_aggregation,
     )
 
     # Afficher le résumé généré
     print(f"Résumé généré :\n{summary}")
 
     # Sauvegarder le résumé dans un fichier texte, si spécifié
-    if args.output_dir:
-        os.makedirs(args.output_dir, exist_ok=True)
-        output_path = os.path.join(args.output_dir, f"{args.output_name}.txt")
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"{output_name}.txt")
         with open(output_path, "w") as output_file:
             output_file.write(summary)
         print(f"Résumé sauvegardé dans : {output_path}")
-    return {"summary":summary, "summary_path":output_path}
+    return {"summary":summary } # "summary_path":output_path
 
 # Parser des arguments pour la ligne de commande
 def parse_args():
@@ -157,7 +146,7 @@ def parse_args():
     parser.add_argument("--conv_mode", type=str, default="vicuna_v1")
     parser.add_argument("--model_base", type=str, default=None, help="Base du modèle")
     parser.add_argument("--question", type=str, default="Describe this video in details")
-    parser.add_argument("--num_frames", type=int, default=16, help="Nombre de frames à utiliser pour l'analyse") #Demo tourne sur 50 frames. OOM si utilisation max frames.
+    parser.add_argument("--num_frames", type=int, default=50, help="Nombre de frames à utiliser pour l'analyse") #Demo tourne sur 50 frames. OOM si utilisation max frames.
     parser.add_argument("--temperature", type=float, default=0.2, help="Température pour la génération de texte")
     parser.add_argument("--top_p", type=float, default=None, help="Paramètre top_p pour la génération")
     parser.add_argument("--num_beams", type=int, default=1, help="Nombre de beams pour la génération")

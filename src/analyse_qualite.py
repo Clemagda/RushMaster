@@ -371,10 +371,11 @@ def run_quality_analysis(video_path, seuil_flou=100.0, seuil_faible=-30.0, seuil
     if 'error' in resultats_audio:
         print(resultats_audio['error'])
         audio_results=None
+    
     else:
         print(f"Frames audio faibles : {resultats_audio['pourcentage_faible']:.2f}%")
         print(f"Frames audio saturées : {resultats_audio['pourcentage_sature']:.2f}%")
-        audio_result = {
+        audio_results = {
             "pourcentage_faible": resultats_audio['pourcentage_faible'],
             "pourcentage_sature": resultats_audio['pourcentage_sature']
         }
