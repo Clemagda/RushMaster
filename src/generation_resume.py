@@ -8,6 +8,33 @@ from dataset import load_video
 from prompt import get_prompt
 from moviepy.editor import VideoFileClip
 
+global_model= None
+global_tokenizer= None
+globale_image_processor = None
+global_context_len = None
+
+def load_model_once(model_path='liuhaotian/llava-v1.6-vicuna-7b'):
+    """
+    Charge le modèle SlowFast-LLaVA une seule fois et stocke les variables dans l'espace global.
+    """
+    global global_model, global_tokenizer, global_image_processor, global_context_len
+    
+    # Si le modèle n'a pas encore été chargé, on le charge
+    if global_model is None:
+        print("===Chargement du modèle SlowFast-LLaVA...===")
+        model_path = os.path.expanduser(model_path)
+        model_name = get_model_name_from_path(model_path)
+        global_tokenizer, global_model, global_image_processor, global_context_len = load_pretrained_model(
+            model_path,
+            model_base=None,
+            model_name=model_name,
+            device=torch.cuda.current_device(),
+            device_map="cuda",
+            rope_scaling_factor=1
+        )
+        print("===Modèle chargé avec succès.===")
+    else:
+        print("===Modèle déjà chargé, réutilisation du modèle en mémoire.===")
 
 def get_total_frames(video_path):
     video = VideoFileClip(video_path)
@@ -50,11 +77,10 @@ def llava_inference(video_frames,
     return summary
 
 # Fonction principale pour exécuter l'inférence et générer le résumé pour une seule vidéo
-def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv_mode='vicuna_v1',
-                  model_base=None,
+def run_inference(video_path, conv_mode='vicuna_v1',
                   question="Describe this video in details",
                   num_frames=50,temperature=0.2,
-                  top_p=None,num_beams=1,temporal_aggregation=None,output_dir='Outputs',output_name='generated_resume',rope_scaling_factor=1):
+                  top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1): #output_dir='Outputs',output_name='generated_resume'
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
 
@@ -91,17 +117,9 @@ def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv
         run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b", question="Describe the actions in this video", num_frames=20)
     """
     print("===Génération du résumé===")
-    # Charger le tokenizer, modèle et image processor
-    model_path = os.path.expanduser(model_path)
-    model_name =  get_model_name_from_path(model_path)
-    tokenizer, model, image_processor, context_len = load_pretrained_model(
-        model_path,
-        model_base,
-        model_name,
-        device=torch.cuda.current_device(),
-        device_map="cuda",
-        rope_scaling_factor=rope_scaling_factor,
-    )
+    
+    load_model_once()
+    global global_model, global_tokenizer, global_image_processor, global_context_len
 
     #num_frames =  get_total_frames(args.video_path)
     
@@ -113,9 +131,9 @@ def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv
         video_frames,
         question,
         conv_mode,
-        model,
-        tokenizer,
-        image_processor,
+        global_model,
+        global_tokenizer,
+        global_image_processor,
         sizes,
         temperature,
         top_p,
@@ -127,13 +145,14 @@ def run_inference(video_path, model_path='liuhaotian/llava-v1.6-vicuna-7b', conv
     print(f"Résumé généré :\n{summary}")
 
     # Sauvegarder le résumé dans un fichier texte, si spécifié
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, f"{output_name}.txt")
-        with open(output_path, "w") as output_file:
-            output_file.write(summary)
-        print(f"Résumé sauvegardé dans : {output_path}")
-    return {"summary":summary } # "summary_path":output_path
+    #if output_dir:
+     #   os.makedirs(output_dir, exist_ok=True)
+      #  output_path = os.path.join(output_dir, f"{output_name}.txt")
+       # with open(output_path, "w") as output_file:
+         #   output_file.write(summary)
+        #print(f"Résumé sauvegardé dans : {output_path}")
+
+    return summary  # "summary_path":output_path
 
 # Parser des arguments pour la ligne de commande
 def parse_args():

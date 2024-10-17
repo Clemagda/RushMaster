@@ -105,7 +105,7 @@ def transcribe_audio(audio_path, vosk_model_path):
 
 
 # Fonction principale pour gérer l'extraction, conversion et transcription
-def run_transcription(video_path, language='en', output_dir="Outputs", output_name="audio_transcripted"):   
+def run_transcription(video_path, language='en'): #output_dir="Outputs", output_name="audio_transcripted"   
     """
     Fonction principale pour gérer l'extraction, la conversion et la transcription de l'audio d'une vidéo.
 
@@ -161,11 +161,11 @@ def run_transcription(video_path, language='en', output_dir="Outputs", output_na
         print(f"Transcription :\n{transcription}")
 
         # Sauvegarder la transcription dans un fichier texte
-        output_path = os.path.join(output_dir, f"{output_name}.txt")
-        with open(output_path, "w") as f:
-            f.write(transcription)
+        #output_path = os.path.join(output_dir, f"{output_name}.txt")
+        #with open(output_path, "w") as f:
+         #   f.write(transcription)
         
-        print(f"Transcription sauvegardée dans : {output_path}")
+        #print(f"Transcription sauvegardée dans : {output_path}")
 
     finally:
         # Supprimer les fichiers temporaires après usage
@@ -173,7 +173,7 @@ def run_transcription(video_path, language='en', output_dir="Outputs", output_na
             os.remove(audio_output_path)
         if os.path.exists(audio_converted_path):
             os.remove(audio_converted_path)
-    return {"transcript": transcription, "transcription_path":output_path}
+    return  transcription
 
 # Fonction pour choisir le modèle Vosk en fonction de la langue
 def get_vosk_model_path(language):
