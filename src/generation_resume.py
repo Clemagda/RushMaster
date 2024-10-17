@@ -78,8 +78,8 @@ def llava_inference(video_frames,
 
 # Fonction principale pour exécuter l'inférence et générer le résumé pour une seule vidéo
 def run_inference(video_path, conv_mode='vicuna_v1',
-                  question="Describe this video in details",
-                  num_frames=50,temperature=0.2,
+                  question="Describe this video in details",num_frames=50,
+                  frames_auto=False, temperature=0.2,
                   top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1): #output_dir='Outputs',output_name='generated_resume'
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
@@ -120,8 +120,10 @@ def run_inference(video_path, conv_mode='vicuna_v1',
     
     load_model_once()
     global global_model, global_tokenizer, global_image_processor, global_context_len
-
-    #num_frames =  get_total_frames(args.video_path)
+    
+    if frames_auto is True:
+        num_frames =  get_total_frames(video_path)
+  
     
     # Chargement des frames de la vidéo spécifique
     video_frames, sizes = load_video(video_path, num_frms=num_frames)
