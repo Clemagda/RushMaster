@@ -1,8 +1,6 @@
 import csv
 import os
-from analyse_qualite import run_quality_analysis  
-from generation_resume import run_inference  
-from transcription_audio import run_transcription
+from main_processing import process_video
 
 def get_video_files_from_directory(input_dir):
     """
@@ -19,7 +17,7 @@ def get_video_files_from_directory(input_dir):
                    if os.path.splitext(file)[1].lower() in video_extensions]
     return video_files
 
-def create_csv_output(video_files, output_csv, output_dir="Outputs", language="en"):
+def create_csv_file(input_dir="Inputs", output_csv="Outputs/results.csv", output_dir="Outputs", language="en"):
     """
     Fusionne les résultats des trois scripts dans un fichier CSV.
     
@@ -29,6 +27,9 @@ def create_csv_output(video_files, output_csv, output_dir="Outputs", language="e
         output_dir (str): Répertoire où sauvegarder les résultats intermédiaires.
         language (str): Langue pour la transcription ('fr' pour français, 'en' pour anglais).
     """
+    input_dir = "Inputs"
+    video_files = get_video_files_from_directory(input_dir)
+    
     with open(output_csv, mode='w', newline='', encoding='utf-8') as csv_file:
         # Définition des en-têtes des colonnes
         fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_summary']
@@ -45,23 +46,9 @@ def create_csv_output(video_files, output_csv, output_dir="Outputs", language="e
                 # Appeler les fonctions des scripts individuels
                 video_output_dir = os.path.join(output_dir, video_id)
                 os.makedirs(video_output_dir, exist_ok=True)
-                quality_analysis = run_quality_analysis(video) 
-                audio_transcription = run_transcription(video, language)  
-                video_resume = run_inference(video)  
-
-                if not quality_analysis:
-                    quality_analysis = "Erreur lors de l'analyse de la qualité"
-                if not audio_transcription:
-                    audio_transcription = "Erreur lors de la transcription audio"
-                if not video_resume:
-                    video_resume = "Erreur lors de la génération du résumé vidéo"
-
-                # Écrire les résultats dans une ligne du CSV
+                results = process_video(video, output_dir, language="en")
                 writer.writerow({
-                    'video_id': video_id,
-                    'quality_analysis': quality_analysis,
-                    'audio_transcription': audio_transcription,
-                    'video_summary': video_resume
+                    'video_id': video_id, **results
                 })
             except Exception as e:
                 print(f"Erreur lors du traitement de la video {video_id} : {e}")
@@ -74,11 +61,6 @@ def create_csv_output(video_files, output_csv, output_dir="Outputs", language="e
             
     print(f"Le rapport est disponible dans : {output_csv}")
 
-# Exemple d'utilisation
-def create_csv_file(input_dir="Inputs", output_dir="Outputs", output_csv="Outputs/results.csv", language="en"):
-    video_files = get_video_files_from_directory(input_dir)
-    
-    create_csv_output(video_files, output_csv, output_dir, language)
 
 if __name__ == "__main__":
     create_csv_file()
