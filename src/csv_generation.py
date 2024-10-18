@@ -4,6 +4,21 @@ from analyse_qualite import run_quality_analysis
 from generation_resume import run_inference  
 from transcription_audio import run_transcription
 
+def get_video_files_from_directory(input_dir):
+    """
+    Récupère tous les fichiers vidéo du dossier spécifié.
+
+    Args:
+        input_dir (str): Chemin du dossier contenant les fichiers vidéo.
+        
+    Returns:
+        list: Liste des chemins des fichiers vidéo.
+    """
+    video_extensions = ['.mp4', '.mov', '.avi', '.mkv']  
+    video_files = [os.path.join(input_dir, file) for file in os.listdir(input_dir) 
+                   if os.path.splitext(file)[1].lower() in video_extensions]
+    return video_files
+
 def create_csv_output(video_files, output_csv, output_dir="Outputs", language="en"):
     """
     Fusionne les résultats des trois scripts dans un fichier CSV.
@@ -60,20 +75,9 @@ def create_csv_output(video_files, output_csv, output_dir="Outputs", language="e
     print(f"Le rapport est disponible dans : {output_csv}")
 
 # Exemple d'utilisation
-def create_csv_file():
-    video_files = [
-        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all/video10.mp4",
-        "playground/data/video_qa/MSRVTT_Zero_Shot_QA/videos/all/video12.mp4",
-    ]
-
-    # Chemin du fichier CSV de sortie
-    output_csv = "Outputs/results.csv"
-    output_dir = "Outputs"
-
-    # Langue pour la transcription ('fr' pour français, 'en' pour anglais)
-    language = "en"
-
-    # Créer le fichier CSV de sortie
+def create_csv_file(input_dir="Inputs", output_dir="Outputs", output_csv="Outputs/results.csv", language="en"):
+    video_files = get_video_files_from_directory(input_dir)
+    
     create_csv_output(video_files, output_csv, output_dir, language)
 
 if __name__ == "__main__":
