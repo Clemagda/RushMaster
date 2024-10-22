@@ -172,23 +172,20 @@ def parse_args():
     parser.add_argument("--top_p", type=float, default=None, help="Paramètre top_p pour la génération")
     parser.add_argument("--num_beams", type=int, default=1, help="Nombre de beams pour la génération")
     parser.add_argument("--temporal_aggregation", type=str, default=None, help="Agrégation temporelle des frames")
-    parser.add_argument("--output_dir", type=str, help="Répertoire pour sauvegarder le résumé")
-    parser.add_argument("--output_name", type=str, help="Nom du fichier de sortie", required=False)
+    parser.add_argument("--frames_auto", type=bool, default=False, help="Nombre de frames à utiliser pour l'analyse")
     parser.add_argument("--rope_scaling_factor", type=int, default=1, help="Facteur de scaling de rope")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_args()
     run_inference(args.video_path,
-                  args.model_path,
                   args.conv_mode,
-                  args.model_base,
                   args.question,
                   args.num_frames,
+                  args.frames_auto,
                   args.temperature,
                   args.top_p,
                   args.num_beams,
                   args.temporal_aggregation,
-                  args.output_dir,
-                  args.output_name,
-                  args.rope_scaling_factor)
+                  args.rope_scaling_factor
+                  )
