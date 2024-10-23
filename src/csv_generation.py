@@ -85,7 +85,7 @@ def create_csv_file(input_dir_or_bucket, output_csv, output_dir="Outputs", langu
 
         try:     
             print(f"===Prétraitement de la vidéo ===")          
-            temp_video = preprocess_video(video,output_path=f"temp/processed_{video_id}.mp4")
+            temp_video = preprocess_video(video)
             print(f"=== prête ===")
             
             print(f"===Traitement de la vidéo ===")
@@ -102,11 +102,11 @@ def create_csv_file(input_dir_or_bucket, output_csv, output_dir="Outputs", langu
         output_path = output_csv 
         df.to_excel(output_path, index=False)
         print(f"Fichier Excel créé avec succès : {output_path}")
-    else:
-        print("Aucun résultat à enregistrer.")
 
         if is_cloud_environment():
-            s3.upload_file(output_csv, input_dir_or_bucket,f'outputs/{os.path.basename(output_csv)}')
+            s3.upload_file(output_csv, input_dir_or_bucket, f'outputs/{os.path.basename(output_csv)}')
+    else:
+        print("Aucun résultat à enregistrer.")
         
     print(f"Les résultats ont été sauvegardés dans {output_csv} (ou dans le bucket S3).")
 

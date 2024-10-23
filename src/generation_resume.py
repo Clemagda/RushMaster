@@ -1,5 +1,6 @@
 import argparse
 import os
+import boto3 # type: ignore
 import torch # type: ignore
 from slowfast_llava.llava.model.builder import load_pretrained_model
 from slowfast_llava.llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
@@ -13,17 +14,60 @@ global_tokenizer= None
 globale_image_processor = None
 global_context_len = None
 
-def load_model_once(model_path='liuhaotian/llava-v1.6-vicuna-7b'):
+
+s3 = boto3.client("s3") if os.getenv("ENVIRONMENT", "LOCAL") == "CLOUD" else None
+
+def download_model_files_from_s3(bucket_name, s3_model_prefix, local_model_path):
+    """
+    Télécharge tous les fichiers d'un répertoire dans un bucket S3 vers un répertoire local.
+    
+    Args:
+        bucket_name (str): Le nom du bucket S3 (ex: "data-rushmaster").
+        s3_model_prefix (str): Le chemin du répertoire contenant les fichiers du modèle dans S3 (ex: "utils/liuhaotian/llava-v1.6-civuna-7b").
+        local_model_path (str): Le chemin local où stocker les fichiers téléchargés.
+    """
+    # Créer le répertoire local si nécessaire
+    if not os.path.exists(local_model_path):
+        os.makedirs(local_model_path)
+    
+    # Lister tous les fichiers dans le répertoire S3
+    try:
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=s3_model_prefix)
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                s3_file_path = obj['Key']
+                local_file_path = os.path.join(local_model_path, os.path.basename(s3_file_path))
+                print(f"Téléchargement de {s3_file_path} vers {local_file_path}")
+                s3.download_file(bucket_name, s3_file_path, local_file_path)
+        else:
+            print(f"Aucun fichier trouvé dans {s3_model_prefix}")
+    except Exception as e:
+        print(f"Erreur lors du téléchargement des fichiers : {e}")
+
+def load_model_once():
     """
     Charge le modèle SlowFast-LLaVA une seule fois et stocke les variables dans l'espace global.
     """
     global global_model, global_tokenizer, global_image_processor, global_context_len
     
-    # Si le modèle n'a pas encore été chargé, on le charge
     if global_model is None:
         print("===Chargement du modèle SlowFast-LLaVA...===")
+
+        if os.getenv("ENVIRONMENT", "LOCAL") == "CLOUD":
+            local_model_path = "/tmp/llava-v1.6-vicuna-7b"  # Chemin local sur l'instance EC2
+            download_model_files_from_s3(
+                bucket_name="data-rushmaster", 
+                s3_model_prefix="utils/liuhaotian/llava-v1.6-vicuna-7b", 
+                local_model_path=local_model_path
+            )
+            model_path = local_model_path
+        else:
+            model_path='liuhaotian/llava-v1.6-vicuna-7b'
+
+
         model_path = os.path.expanduser(model_path)
         model_name = get_model_name_from_path(model_path)
+        
         global_tokenizer, global_model, global_image_processor, global_context_len = load_pretrained_model(
             model_path,
             model_base=None,
