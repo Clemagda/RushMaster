@@ -1,8 +1,8 @@
 import os
 import wave
 import argparse
-from vosk import Model, KaldiRecognizer
-from moviepy.editor import VideoFileClip
+from vosk import Model, KaldiRecognizer # type: ignore
+from moviepy.editor import VideoFileClip # type: ignore
 import subprocess
 import tempfile
 import logging
@@ -48,7 +48,7 @@ def convert_audio_to_mono(audio_input_path):
 
     # Conversion avec ffmpeg
     command = [
-        "ffmpeg", "-y",  # Ecraser le fichier s'il existe déjà
+        "ffmpeg", "-y", '-loglevel', 'panic',  # Ecraser le fichier s'il existe déjà
         "-i", audio_input_path,
         "-ac", "1",  # Convertir en mono
         "-ar", "16000",  # Taux d'échantillonnage recommandé par Vosk (16 kHz)
@@ -159,13 +159,6 @@ def run_transcription(video_path, language='en'): #output_dir="Outputs", output_
 
         # Afficher la transcription dans la console
         print(f"Transcription :\n{transcription}")
-
-        # Sauvegarder la transcription dans un fichier texte
-        #output_path = os.path.join(output_dir, f"{output_name}.txt")
-        #with open(output_path, "w") as f:
-         #   f.write(transcription)
-        
-        #print(f"Transcription sauvegardée dans : {output_path}")
 
     finally:
         # Supprimer les fichiers temporaires après usage

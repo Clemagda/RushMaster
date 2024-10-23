@@ -1,5 +1,3 @@
-# TODO: Créer tests automatisés pour vérifier fonctionnement du script. Et si possible ajouter workflow github avant de passer au script d'anallyse des doublons.
-
 import subprocess
 import cv2 # type: ignore
 import numpy as np # type: ignore
@@ -381,7 +379,7 @@ def run_quality_analysis(video_path, seuil_flou=100.0, seuil_faible=-30.0, seuil
         }
         
     return {
-        "Flou": 'Flou' if resultat_flou else 'Non flou',
+        "Flou": 'Floue' if resultat_flou else 'Non flou',
         "Pourcentage_flou": pourcentage_flou,
         "Stabilite": 'Stable' if resultat_stabilite else 'Instable',
         "Frames_surexposees": resultats_exposition.get('pourcentage_surexposees', None),

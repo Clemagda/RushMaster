@@ -83,27 +83,20 @@ def create_csv_file(input_dir_or_bucket, output_csv, output_dir="Outputs", langu
     for video in video_files:
         video_id = os.path.basename(video).split('.')[0]  # Utiliser le nom du fichier sans extension
 
-        try:               
-            temp_video = preprocess_video(video)
-
-            if temp_video is not None:
-                result = process_video(temp_video, output_dir, language="en")
-                results.append(result)
-                os.remove(temp_video)
-                
-            #writer.writerow(result)
-            else :
-                print(f"Erreur lors du prétraitement de la vidéo {video_id}")
-
+        try:     
+            print(f"===Prétraitement de la vidéo ===")          
+            temp_video = preprocess_video(video,output_path=f"temp/processed_{video_id}.mp4")
+            print(f"=== prête ===")
+            
+            print(f"===Traitement de la vidéo ===")
+            result = process_video(temp_video, output_dir, language="en")
+            result['video_id'] = video_id
+            results.append(result)
+            os.remove(temp_video)
+       
         except Exception as e:
-            print(f"Erreur lors du traitement de la video {video_id} : {e}")
+            print(f"Erreur lors du traitement de la video  : {e}")
 
-            #writer.writerow({
-             #   'video_id': video_id,
-              #  'quality_analysis': "Erreur.",
-               # 'audio_transcription': "Erreur.",
-                #'video_summary': "Erreur."
-            #})
     if results:
         df = pd.DataFrame(results)
         output_path = output_csv 

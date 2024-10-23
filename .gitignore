@@ -7,6 +7,7 @@ slowfast_llava/llava/_pycache_
 src/_pycache_
 Outputs
 Inputs
+temp
 #Modèles Vosk
 Vosk
 

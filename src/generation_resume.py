@@ -6,7 +6,6 @@ from slowfast_llava.llava.mm_utils import tokenizer_image_token, process_images,
 from slowfast_llava.llava.constants import IMAGE_TOKEN_INDEX
 from dataset import load_video
 from prompt import get_prompt
-from preprocessing import preprocess_video
 from moviepy.editor import VideoFileClip # type: ignore
 
 global_model= None
@@ -81,7 +80,7 @@ def llava_inference(video_frames,
 def run_inference(video_path, conv_mode='vicuna_v1',
                   question="Describe this video in details",num_frames=50,
                   frames_auto=False, temperature=0.2,
-                  top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1): #output_dir='Outputs',output_name='generated_resume'
+                  top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1,output_dir='Outputs'): #,output_name='generated_resume'
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
 
@@ -116,19 +115,21 @@ def run_inference(video_path, conv_mode='vicuna_v1',
 
     Example:
         run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b", question="Describe the actions in this video", num_frames=20)
-    """
-    print("===Génération du résumé===")
-    
+    """    
     load_model_once()
     global global_model, global_tokenizer, global_image_processor, global_context_len
     
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    print("===Chargement de la vidéo===")
     if frames_auto is True:
         num_frames =  get_total_frames(video_path)
   
     
     # Chargement des frames de la vidéo spécifique
     video_frames, sizes = load_video(video_path, num_frms=num_frames)
-
+    print("===Frames chargées===")
+    print("===Generation du résumé===")
     # Génération du résumé
     summary = llava_inference(
         video_frames,
@@ -147,15 +148,7 @@ def run_inference(video_path, conv_mode='vicuna_v1',
     # Afficher le résumé généré
     print(f"Résumé généré :\n{summary}")
 
-    # Sauvegarder le résumé dans un fichier texte, si spécifié
-    #if output_dir:
-     #   os.makedirs(output_dir, exist_ok=True)
-      #  output_path = os.path.join(output_dir, f"{output_name}.txt")
-       # with open(output_path, "w") as output_file:
-         #   output_file.write(summary)
-        #print(f"Résumé sauvegardé dans : {output_path}")
-
-    return summary  # "summary_path":output_path
+    return summary  
 
 # Parser des arguments pour la ligne de commande
 def parse_args():

@@ -18,7 +18,7 @@ def preprocess_video(input_path, output_path, target_resolution=(336, 336)):
         print(f"Redimensionnement de la vidéo à {target_resolution[0]}x{target_resolution[1]}")
         # Utiliser FFmpeg pour redimensionner la vidéo
         cmd = [
-            'ffmpeg', '-i', input_path, '-vf', 
+            'ffmpeg', '-y', '-loglevel','panic', '-i', input_path, '-vf', 
             f'scale={target_resolution[0]}:trunc(ow/a/2)*2',
             output_path
         ]
@@ -27,6 +27,7 @@ def preprocess_video(input_path, output_path, target_resolution=(336, 336)):
         print("Pas de redimensionnement nécessaire, la vidéo est déjà à la bonne taille.")
 
     cap.release()
+    return output_path
 
 
 def clean_temp_file(file_path):
