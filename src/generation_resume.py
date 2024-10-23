@@ -1,12 +1,13 @@
 import argparse
 import os
-import torch
+import torch # type: ignore
 from slowfast_llava.llava.model.builder import load_pretrained_model
 from slowfast_llava.llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
 from slowfast_llava.llava.constants import IMAGE_TOKEN_INDEX
 from dataset import load_video
 from prompt import get_prompt
-from moviepy.editor import VideoFileClip
+from preprocessing import preprocess_video
+from moviepy.editor import VideoFileClip # type: ignore
 
 global_model= None
 global_tokenizer= None

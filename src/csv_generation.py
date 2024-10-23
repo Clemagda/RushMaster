@@ -1,8 +1,11 @@
-import csv
+
 import os
+
 from main_processing import process_video
-import boto3
-from botocore.exceptions import ClientError
+from preprocessing import preprocess_video
+import boto3 # type: ignore
+from botocore.exceptions import ClientError # type: ignore
+import pandas as pd # type: ignore
 
 def is_cloud_environment():
     """
@@ -65,52 +68,66 @@ def create_csv_file(input_dir_or_bucket, output_csv, output_dir="Outputs", langu
         language (str): Langue pour la transcription ('fr' pour français, 'en' pour anglais).
     """
            
-
     video_files = get_video_files_from_directory(input_dir_or_bucket)
-    
-    with open(output_csv, mode='w', newline='', encoding='utf-8') as csv_file:
+    results=[]
+
+    #with open(output_csv, mode='w', newline='', encoding='utf-8') as csv_file:
         # Définition des en-têtes des colonnes
-        fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_summary']
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+     #   fieldnames = ['video_id', 'quality_analysis', 'audio_transcription', 'video_summary']
+      #  writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         
-        if csv_file.tell() ==0:
-            writer.writeheader()
+        #if csv_file.tell() ==0:
+         #   writer.writeheader()
 
         # Parcourir chaque fichier vidéo
-        for video in video_files:
-            video_id = os.path.basename(video).split('.')[0]  # Utiliser le nom du fichier sans extension
+    for video in video_files:
+        video_id = os.path.basename(video).split('.')[0]  # Utiliser le nom du fichier sans extension
 
-            try:               
-                result = process_video(video, output_dir, language="en")
-                writer.writerow(result)
+        try:               
+            temp_video = preprocess_video(video)
 
-            except Exception as e:
-                print(f"Erreur lors du traitement de la video {video_id} : {e}")
-    
-                writer.writerow({
-                    'video_id': video_id,
-                    'quality_analysis': "Erreur.",
-                    'audio_transcription': "Erreur.",
-                    'video_summary': "Erreur."
-                })
+            if temp_video is not None:
+                result = process_video(temp_video, output_dir, language="en")
+                results.append(result)
+                os.remove(temp_video)
+                
+            #writer.writerow(result)
+            else :
+                print(f"Erreur lors du prétraitement de la vidéo {video_id}")
 
-            if is_cloud_environment():
-                s3.upload_file(output_csv, input_dir_or_bucket,f'outputs/{os.path.basename(output_csv)}')
-            
-            print(f"Les résultats ont été sauvegardés dans {output_csv} (ou dans le bucket S3).")
+        except Exception as e:
+            print(f"Erreur lors du traitement de la video {video_id} : {e}")
+
+            #writer.writerow({
+             #   'video_id': video_id,
+              #  'quality_analysis': "Erreur.",
+               # 'audio_transcription': "Erreur.",
+                #'video_summary': "Erreur."
+            #})
+    if results:
+        df = pd.DataFrame(results)
+        output_path = output_csv 
+        df.to_excel(output_path, index=False)
+        print(f"Fichier Excel créé avec succès : {output_path}")
+    else:
+        print("Aucun résultat à enregistrer.")
+
+        if is_cloud_environment():
+            s3.upload_file(output_csv, input_dir_or_bucket,f'outputs/{os.path.basename(output_csv)}')
+        
+    print(f"Les résultats ont été sauvegardés dans {output_csv} (ou dans le bucket S3).")
 
 
 if __name__ == "__main__":
     if is_cloud_environment():
-        print("Execution dans un environnement Cloud")
+        print("=====Execution dans un environnement Cloud=====")
     else:
-        print("Execution dans un environnement local")
+        print("=====Execution dans un environnement local=====")
 
     input_dir_or_bucket = "Inputs" if not is_cloud_environment() else "data-rushmaster"
-    output_csv = "Outputs/results.csv" if not is_cloud_environment() else "/tmp/results.csv"
+    output_csv = "Outputs/results.xlsx" if not is_cloud_environment() else "/tmp/results.xlsx"
     output_dir = "Outputs" if not is_cloud_environment() else "/tmp"
     language = "en"
 
-
-
+    print("=====Traitement des vidéos=====")
     create_csv_file(input_dir_or_bucket, output_csv, output_dir, language)

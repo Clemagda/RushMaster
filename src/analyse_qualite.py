@@ -1,15 +1,15 @@
 # TODO: Créer tests automatisés pour vérifier fonctionnement du script. Et si possible ajouter workflow github avant de passer au script d'anallyse des doublons.
 
 import subprocess
-import cv2
-import numpy as np
-import librosa
-import moviepy.editor as mp
+import cv2 # type: ignore
+import numpy as np # type: ignore
+import librosa # type: ignore
+import moviepy.editor as mp # type: ignore
 import os
-from pymediainfo import MediaInfo
+from pymediainfo import MediaInfo # type: ignore
 import argparse
 import tempfile
-from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip # type: ignore
 
 ###############################
 # NETTETE ET DETECTION DE FLOU
