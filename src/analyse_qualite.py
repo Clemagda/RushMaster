@@ -1,13 +1,13 @@
 import subprocess
-import cv2 # type: ignore
-import numpy as np # type: ignore
-import librosa # type: ignore
-import moviepy.editor as mp # type: ignore
+import numpy as np 
+import cv2
+import librosa 
+import moviepy.editor as mp 
 import os
-from pymediainfo import MediaInfo # type: ignore
+from pymediainfo import MediaInfo 
 import argparse
 import tempfile
-from moviepy.editor import VideoFileClip # type: ignore
+from moviepy.editor import VideoFileClip 
 
 ###############################
 # NETTETE ET DETECTION DE FLOU

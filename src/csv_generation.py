@@ -124,3 +124,4 @@ if __name__ == "__main__":
 
     print("=====Traitement des vidéos=====")
     create_csv_file(input_dir_or_bucket, output_csv, output_dir, language)
+print("=====Fin du traitement=====")
