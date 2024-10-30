@@ -3,67 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Téléversement et téléchargement</title>
+    <title>Upload and Download Files</title>
 </head>
 <body>
-    <h1>Téléversement de vidéos et téléchargement du fichier results.csv</h1>
-    
-    <!-- Formulaire pour téléverser des vidéos -->
-    <form id="upload-form">
-        <input type="file" id="video-files" name="video-files" multiple>
-        <button type="submit">Téléverser les vidéos</button>
-    </form>
 
-    <div id="status"></div>
-    <div id="download-section" style="display: none;">
-        <p id="download-message"></p>
-        <a id="download-link" href="" download> Télécharger results.csv </a>
-    </div>
+<h2>Uploader vos vidéos</h2>
+<input type="file" id="fileInput" multiple>
+<button onclick="uploadFiles()">Téléverser</button>
 
-    <script>
-        document.getElementById('upload-form').onsubmit = async function(event) {
-            event.preventDefault();
+<h2>Télécharger le fichier de résultats</h2>
+<button onclick="downloadResults()">Télécharger results.xlsx</button>
 
-            const files = document.getElementById('video-files').files;
-            const fileNames = Array.from(files).map(file => file.name);
-            const statusDiv = document.getElementById('status');
-            
-            // Appel à la fonction Lambda pour téléverser les fichiers
-            const response = await fetch('https://YOUR_API_LAMBDA_URL/upload', {
-                method: 'POST',
-                body: JSON.stringify({ video_names: fileNames }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            const data = await response.json();
-            const uploadUrls = data.upload_urls;
+<div id="status"></div>
 
-            // Téléverser chaque vidéo
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const uploadUrl = uploadUrls[i].upload_url;
+<script>
+    const bucketName = 'data-rushmaster';  // Remplacez par le nom de votre bucket S3
+    const region = 'eu-west-3';  // Remplacez par votre région AWS
+    const resultsFileName = 'Outputs/results.xlsx';
 
-                await fetch(uploadUrl, {
+    async function uploadFiles() {
+        const files = document.getElementById('fileInput').files;
+        if (files.length === 0) {
+            document.getElementById('status').innerText = "Veuillez sélectionner des fichiers à téléverser.";
+            return;
+        }
+
+        const uploadPromises = [];
+        for (const file of files) {
+            const uploadPromise = fetchPresignedUrl(file.name)
+                .then(url => fetch(url, {
                     method: 'PUT',
+                    headers: { 'Content-Type': file.type },
                     body: file
+                }))
+                .then(response => {
+                    if (response.ok) {
+                        return `${file.name} téléversé avec succès.`;
+                    } else {
+                        throw new Error(`Échec du téléversement de ${file.name}`);
+                    }
                 });
-            }
+            uploadPromises.push(uploadPromise);
+        }
 
-            statusDiv.innerHTML = "Téléversement réussi. Traitement en cours...";
+        try {
+            const results = await Promise.all(uploadPromises);
+            document.getElementById('status').innerText = results.join('\n');
+        } catch (error) {
+            document.getElementById('status').innerText = `Erreur: ${error.message}`;
+        }
+    }
 
-            // Vérification régulière pour savoir si results.csv est prêt
-            const checkResults = setInterval(async function() {
-                const checkResponse = await fetch('https://YOUR_API_LAMBDA_URL/get-results');
-                const checkData = await checkResponse.json();
-                
-                if (checkResponse.status === 200) {
-                    document.getElementById('download-message').innerText = checkData.message;
-                    document.getElementById('download-link').href = checkData.download_url;
-                    document.getElementById('download-section').style.display = 'block';
-                    clearInterval(checkResults);  // Arrêter la vérification
-                }
-            }, 10000);  // Vérifier toutes les 10 secondes
-        };
-    </script>
+    async function fetchPresignedUrl(fileName) {
+        const lambdaUrl = 'https://ce5jh52il46f4hsybq3ba4gzla0ujwfm.lambda-url.eu-west-3.on.aws/';  // Remplacez par l'URL de votre fonction Lambda
+
+        const response = await fetch(lambdaUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_names: [fileName] })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`Erreur lors de la récupération de l'URL : ${data.body}`);
+        }
+
+        return data.upload_urls[0].upload_url;
+    }
+
+    async function downloadResults() {
+        const resultsUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${resultsFileName}`;
+        
+        try {
+            const response = await fetch(resultsUrl);
+            if (!response.ok) throw new Error('Erreur lors du téléchargement du fichier results.xlsx');
+
+            const blob = await response.blob();
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = 'results.xlsx';
+            downloadLink.click();
+            URL.revokeObjectURL(downloadLink.href);
+        } catch (error) {
+            document.getElementById('status').innerText = `Erreur: ${error.message}`;
+        }
+    }
+</script>
+
 </body>
 </html>
