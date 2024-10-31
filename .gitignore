@@ -11,4 +11,5 @@ temp
 #Modèles Vosk
 Vosk
 *.tar
+src/_pycache_/*
 
