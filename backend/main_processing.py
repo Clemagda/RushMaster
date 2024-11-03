@@ -1,7 +1,7 @@
-from analyse_qualite import run_quality_analysis
+from backend.analyse_qualite.analyse_qualite import run_quality_analysis
 from generation_resume import run_inference
 import os
-from transcription_audio import run_transcription
+from backend.transcription_audio.transcription_audio import run_transcription
 
 def process_video(video_path, output_dir, language):
     """Traite une vidéo et retourne les résultats sous forme de dictionnaire."""

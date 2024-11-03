@@ -1,5 +1,5 @@
 import pytest
-from src.analyse_qualite import detect_flou, detect_exposition, detect_compression_excessive, analyser_niveaux_sonores
+from backend.analyse_qualite.analyse_qualite import detect_flou, detect_exposition, detect_compression_excessive, analyser_niveaux_sonores
 
 
 def test_detect_flou():

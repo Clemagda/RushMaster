@@ -2,7 +2,7 @@
 import os
 
 from main_processing import process_video
-from preprocessing import preprocess_video
+from backend.preprocessing.preprocessing import preprocess_video
 import boto3 # type: ignore
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError # type: ignore
 import pandas as pd # type: ignore

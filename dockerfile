@@ -42,6 +42,9 @@ RUN /opt/conda/bin/conda init bash
 # Copier les fichiers du projet local dans le conteneur
 COPY . /workspace
 
+# Créer le répertoire temporaire pour les fichiers de travail
+RUN mkdir -p /tmp
+
 #Déinifition du PYTHON PATH pour inclure le repertoire workspace
 ENV PYTHONPATH="/workspace"
 
@@ -69,5 +72,5 @@ RUN pip install 'git+https://github.com/huggingface/transformers' 'git+https://g
 # Définir le point d'entrée pour activer l'environnement et lancer le script
 ENTRYPOINT ["/bin/bash", "-c", "source /opt/conda/etc/profile.d/conda.sh && conda activate sf_llava && echo 'Conda environment activated'"]
 
-CMD [ "python /workspace/src/csv_generation.py" ]
+CMD [ "python", "/workspace/src/csv_generation.py" ]
 
