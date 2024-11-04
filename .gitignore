@@ -12,4 +12,5 @@ temp
 Vosk
 *.tar
 backend/_pycache_
+.env
 

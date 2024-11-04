@@ -13,4 +13,4 @@ COPY requirements.txt /frontend_app//requirements.txt
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # Commande pour exécuter le script lorsque le conteneur démarre
-CMD ["streamlit", "run", "frontend-st"]
+CMD ["streamlit", "run", "frontend-st.py"]
