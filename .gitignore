@@ -13,4 +13,6 @@ Vosk
 *.tar
 backend/_pycache_
 .env
+shared
+*/_pycache_
 

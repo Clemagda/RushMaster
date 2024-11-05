@@ -1,5 +1,5 @@
 # Dockerfile de l'image de base
-FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
 
 # Désactiver les interactions et définir le fuseau horaire
 ENV DEBIAN_FRONTEND=noninteractive
@@ -15,6 +15,7 @@ RUN apt-get update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y python3.10 python3.10-distutils curl && \
+    apt-get install nano && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Installer pip pour Python 3.10

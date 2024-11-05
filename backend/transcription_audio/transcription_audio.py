@@ -5,6 +5,7 @@ from vosk import Model, KaldiRecognizer # type: ignore
 from moviepy.editor import VideoFileClip # type: ignore
 import subprocess
 import tempfile
+import json
 import logging
 
 logging.getLogger('vosk').setLevel(logging.ERROR)
@@ -20,11 +21,7 @@ def extract_audio_from_video(video_path):
     Returns:
         str: Chemin vers le fichier temporaire contenant l'audio extrait.
     """
-    temp_audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    audio_output_path = temp_audio_file.name
-    temp_audio_file.close()
-
-    # Extraction de l'audio avec MoviePy
+    audio_output_path = "/tmp/audio.wav"
     video = VideoFileClip(video_path)
     audio = video.audio
     audio.write_audiofile(audio_output_path, codec='pcm_s16le')
@@ -42,17 +39,15 @@ def convert_audio_to_mono(audio_input_path):
     Returns:
         str: Chemin vers le fichier audio temporaire converti en mono et 16-bit PCM.
     """
-    temp_audio_converted = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    audio_converted_path = temp_audio_converted.name
-    temp_audio_converted.close()
+    audio_converted_path = "/tmp/audio_converted.wav"
 
     # Conversion avec ffmpeg
     command = [
-        "ffmpeg", "-y", '-loglevel', 'panic',  # Ecraser le fichier s'il existe déjà
+        "ffmpeg", "-y", '-loglevel', 'panic',  
         "-i", audio_input_path,
-        "-ac", "1",  # Convertir en mono
-        "-ar", "16000",  # Taux d'échantillonnage recommandé par Vosk (16 kHz)
-        "-sample_fmt", "s16",  # 16-bit PCM
+        "-ac", "1",  
+        "-ar", "16000",  
+        "-sample_fmt", "s16",  
         audio_converted_path
     ]
     subprocess.run(command, check=True)
@@ -92,10 +87,10 @@ def transcribe_audio(audio_path, vosk_model_path):
         if len(data) == 0:
             break
         if recognizer.AcceptWaveform(data):
-            result = recognizer.Result()
-            transcription.append(result)
-        else:
-            recognizer.PartialResult()
+            result = json.loads(recognizer.Result())
+            transcription.append(result.get("text",""))
+       # else:
+        #    recognizer.PartialResult()
 
     wf.close()
 
@@ -105,7 +100,7 @@ def transcribe_audio(audio_path, vosk_model_path):
 
 
 # Fonction principale pour gérer l'extraction, conversion et transcription
-def run_transcription(video_path, language='en'): #output_dir="Outputs", output_name="audio_transcripted"   
+def run_transcription(video_path, language='en'):   
     """
     Fonction principale pour gérer l'extraction, la conversion et la transcription de l'audio d'une vidéo.
 
@@ -144,29 +139,20 @@ def run_transcription(video_path, language='en'): #output_dir="Outputs", output_
     print("#=== Transcription audio...===")
     vosk_model_path = get_vosk_model_path(language)
 
-    try:
-        # Extraire l'audio de la vidéo dans un fichier temporaire
-        print("Extraction de l'audio de la vidéo...")
-        audio_output_path = extract_audio_from_video(video_path)
+ 
+       
+    print("Extraction de l'audio de la vidéo...")
+    audio_output_path = extract_audio_from_video(video_path)
+    print("Conversion de l'audio en mono et 16-bit PCM...")
+    audio_converted_path = convert_audio_to_mono(audio_output_path)
 
-        # Convertir l'audio en mono et 16-bit PCM dans un fichier temporaire
-        print("Conversion de l'audio en mono et 16-bit PCM...")
-        audio_converted_path = convert_audio_to_mono(audio_output_path)
+    print("Transcription de l'audio en cours...")
+    transcription = transcribe_audio(audio_converted_path, vosk_model_path)
 
-        # Transcrire l'audio converti
-        print("Transcription de l'audio en cours...")
-        transcription = transcribe_audio(audio_converted_path, vosk_model_path)
+    print(f"Transcription :\n{transcription}")
 
-        # Afficher la transcription dans la console
-        print(f"Transcription :\n{transcription}")
-
-    finally:
-        # Supprimer les fichiers temporaires après usage
-        if os.path.exists(audio_output_path):
-            os.remove(audio_output_path)
-        if os.path.exists(audio_converted_path):
-            os.remove(audio_converted_path)
-    return  transcription
+    return transcription
+  
 
 # Fonction pour choisir le modèle Vosk en fonction de la langue
 def get_vosk_model_path(language):
@@ -181,13 +167,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Transcription audio d'une vidéo avec Vosk")
     parser.add_argument("--video_path", type=str, required=True, help="Chemin vers la vidéo à transcrire")
     parser.add_argument("--language", type=str, required=True, choices=['fr', 'en'],default='en', help="Langue de la vidéo ('fr' pour français, 'en' pour anglais)")
-    parser.add_argument("--output_dir", type=str, default="Outputs", help="Répertoire pour sauvegarder la transcription")
-    parser.add_argument("--output_name", type=str, required=True, help="Nom du fichier de transcription")
     return parser.parse_args()
 
 if __name__ == "__main__":
-    args = parse_args()
-    run_transcription(args.video_path,
-                      args.language,
-                      args.output_dir,
-                      args.output_name)
+    # Test avec des valeurs d'exemple
+    video_path = "/app/shared/video10.mp4"
+    language = "en"
+    run_transcription(video_path, language)
