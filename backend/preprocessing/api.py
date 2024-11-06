@@ -8,16 +8,11 @@ app = FastAPI()
 @app.post("/preprocess/")
 async def preprocess_video_endpoint(file: UploadFile = File(...)):
     # Sauvegarder temporairement le fichier vidéo reçu
-    temp_video_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    temp_video_path = temp_video_file.name
-    with open(temp_video_path, 'wb') as f:
+    input_video_path = f"/app/shared/inputs/{file.filename}"
+
+    with open(input_video_path, 'wb') as f:
         f.write(await file.read())
-    
-    # Lancer le prétraitement
-    preprocess_video(temp_video_path)
 
-    # Supprimer le fichier temporaire après prétraitement
-    if os.path.exists(temp_video_path):
-        os.remove(temp_video_path)
-
-    return {"message": "Vidéo prétraitée et sauvegardée dans le bucket S3"}
+    processed_video_path = preprocess_video(input_video_path)
+    return {"message": "Vidéo pretraitee avec succes",
+            "processed_video_path": processed_video_path}

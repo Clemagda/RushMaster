@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+
+  preprocessing-service:
+    image: preprocessing
+    environment:
+      ENVIRONMENT: "CLOUD"
+    volumes:
+      - shared-inputs:/app/shared/inputs
+      - shared-processed:/app/shared/processed
+    entrypoint: ["python", "api.py"]
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  analyse-qualite-service:
+    image: analysequalite
+    volumes:
+      - shared-processed:/app/shared/processed
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8001"]
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  transcription-audio-service:
+    image: transcription-audio
+    volumes:
+      - shared-processed:/app/shared/processed
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8002"]
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  generation-resume-service:
+    image: generationresume
+    volumes:
+      - shared-processed:/app/shared/processed
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8003"]
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8003 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  csv-generation-service:
+    image: excelgeneration
+    volumes:
+      - shared-processed:/app/shared/processed
+      - shared-outputs:/app/shared/outputs
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8004"]
+    networks:
+      - app-network
+    depends_on:
+      preprocessing-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8004 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  shared-inputs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  shared-processed:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  shared-outputs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
