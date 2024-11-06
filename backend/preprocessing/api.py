@@ -5,6 +5,10 @@ import os
 
 app = FastAPI()
 
+@app.get("/preprocess/healthcheck")
+def healthcheck():
+    return {"status": "healthy"}
+
 @app.post("/preprocess/")
 async def preprocess_video_endpoint(file: UploadFile = File(...)):
     # Sauvegarder temporairement le fichier vidéo reçu

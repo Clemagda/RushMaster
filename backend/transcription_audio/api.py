@@ -5,6 +5,10 @@ import os
 
 app = FastAPI()
 
+@app.get("/transcribe/healthcheck")
+def healthcheck():
+    return {"status": "healthy"}
+
 @app.post("/transcribe/")
 async def transcribe_video(file: UploadFile = File(...), language: str = "en"):
     try:

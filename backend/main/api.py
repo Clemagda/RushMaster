@@ -3,6 +3,10 @@ from csv_generation import process_video
 
 app = FastAPI()
 
+@app.get("/generate-xlsx/healthcheck")
+def healthcheck():
+    return {"status": "healthy"}
+
 @app.post("/generate-xlsx/")
 async def generate_xlsx():
     """

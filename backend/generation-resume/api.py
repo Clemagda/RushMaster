@@ -5,6 +5,10 @@ import os
 
 app = FastAPI()
 
+@app.get("/generate_summary/healthcheck")
+def healthcheck():
+    return {"status": "healthy"}
+
 @app.post("/generate_summary/")
 async def generate_summary(file: UploadFile = File(...)):
     try:
