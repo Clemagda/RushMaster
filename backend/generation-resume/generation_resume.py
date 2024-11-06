@@ -124,7 +124,7 @@ def llava_inference(video_frames,
 def run_inference(video_path, conv_mode='vicuna_v1',
                   question="Describe this video in details",num_frames=50,
                   frames_auto=False, temperature=0.2,
-                  top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1,output_dir='Outputs'): #,output_name='generated_resume'
+                  top_p=None,num_beams=1,temporal_aggregation=None,rope_scaling_factor=1,output_dir='Outputs'): 
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
 

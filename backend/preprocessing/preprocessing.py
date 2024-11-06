@@ -3,7 +3,16 @@ import cv2 # type: ignore
 import os
 import tempfile
 import subprocess
+import boto3
 
+s3 = boto3.client('s3', region_name='eu-west-3')  # Ajuste la région si nécessaire
+bucket_name = "data-rushmaster"
+processed_prefix = "processed/"
+
+def save_to_s3(local_video_path, video_name):
+    s3_key = f"{processed_prefix}{video_name}"
+    s3.upload_file(local_video_path, bucket_name, s3_key)
+    print(f"Vidéo {video_name} sauvegardée dans S3 à {s3_key}")
 
 def preprocess_video(input_path, output_path=None, target_resolution=(336, 336)):
 
@@ -23,7 +32,6 @@ def preprocess_video(input_path, output_path=None, target_resolution=(336, 336))
     cap = cv2.VideoCapture(input_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
     print(f"Original resolution: {width}x{height}")
 
     # Vérifier si un redimensionnement est nécessaire
@@ -43,7 +51,10 @@ def preprocess_video(input_path, output_path=None, target_resolution=(336, 336))
 
     cap.release()
 
-    return output_path
+    video_name = os.path.basename(output_path)
+    save_to_s3(output_path, video_name)
+    clean_temp_file(output_path)
+
 
 
 def clean_temp_file(file_path):

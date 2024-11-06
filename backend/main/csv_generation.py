@@ -12,7 +12,7 @@ s3 = boto3.client('s3', region_name='eu-west-3')
 
 INPUT_BUCKET_NAME = 'data-rushmaster'
 OUTPUT_BUCKET_NAME = 'data-rushmaster'
-INPUT_PREFIX = "Inputs/"
+INPUT_PREFIX = "processed/"
 OUTPUT_PREFIX = "Outputs/"
 
 def get_video_files_from_s3():
