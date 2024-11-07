@@ -1,30 +1,30 @@
 from fastapi import FastAPI, UploadFile, File
 from transcription_audio import run_transcription
+from pydantic import BaseModel
 import tempfile
 import os
 
 app = FastAPI()
+
+class VideoPath(BaseModel):
+    video_path: str
+    language: str = "en"
 
 @app.get("/transcribe/healthcheck")
 def healthcheck():
     return {"status": "healthy"}
 
 @app.post("/transcribe/")
-async def transcribe_video(file: UploadFile = File(...), language: str = "en"):
-    try:
-        # Sauvegarder le fichier vidéo reçu temporairement
-        temp_video_file = tempfile.NamedTemporaryFile(delete=False)
-        temp_video_path = temp_video_file.name
-        with open(temp_video_path, 'wb') as f:
-            f.write(await file.read())
+async def transcribe_video(video: VideoPath):
+    input_video_path = video.video_path
+    language = video.language
 
-        # Transcrire l'audio
-        transcription = run_transcription(temp_video_path, language)
+    # Assurez-vous que le fichier existe
+    if not os.path.exists(input_video_path):
+        return {"error": "Fichier non trouvé", "path": input_video_path}
 
-        # Retourner la transcription
-        return {"transcription": transcription}
+    # Appeler la fonction de transcription
+    transcription = run_transcription(input_video_path, language)
 
-    finally:
-        # Nettoyer les fichiers temporaires
-        if os.path.exists(temp_video_path):
-            os.remove(temp_video_path)
+    # Retourner la transcription
+    return {"transcription": transcription}

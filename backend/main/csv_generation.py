@@ -18,18 +18,22 @@ def process_video():
 
         try:
             print(f"=== Prétraitement de la vidéo {video_id} ===")
-            response = requests.post("http://transcription-audio-service:8000/transcribe", json={"video_path": video_path})
-            transcription_result = response.json().get("transcription", "N/A")
+            response_transcription = requests.post("http://transcription-audio-service:8000/transcribe", json={"video_path": video_path})
+            print(f"Réponse transcription audio - Statut: {response_transcription.status_code}, Contenu: {response_transcription.text}")
+            transcription_result = response_transcription.json().get("transcription", "N/A")
 
             # 2. Appel de l'API d'analyse qualité
             print(f"=== Analyse qualité de la vidéo {video_id} ===")
-            response = requests.post("http://analyse-qualite-service:8000/analyse", json={"video_path": video_path})
-            quality_result = response.json()
+            response_quality = requests.post("http://analyse-qualite-service:8000/quality_analysis", json={"video_path": video_path})
+            print(f"Réponse analyse qualité - Statut: {response_quality.status_code}, Contenu: {response_quality.text}")
+            quality_result = response_quality.json() if response_quality.status_code == 200 else {"error": "Quality analysis failed"}
 
             # 3. Appel de l'API de génération de résumé
             print(f"=== Génération du résumé de la vidéo {video_id} ===")
-            response = requests.post("http://generation-resume-service:8000/generate", json={"video_path": video_path})
-            resume_result = response.json().get("resume", "N/A")
+            response_summary = requests.post("http://generation-resume-service:8000/generate_summary", json={"video_path": video_path})
+            print(f"Réponse génération de résumé - Statut: {response_summary.status_code}, Contenu: {response_summary.text}")
+            resume_result = response_summary.json().get("summary", "N/A") if response_summary.status_code == 200 else "N/A"
+            
 
             result = {
                 "video_id": video_id,
@@ -43,6 +47,7 @@ def process_video():
         
     if results :
         df=pd.DataFrame(results)
+        print(f"Apercu des resultats : {df.head()}")
         output_filename = os.path.join(OUTPUT_DIR, "results.xlsx")
         df.to_excel(output_filename, index=False)
     else :

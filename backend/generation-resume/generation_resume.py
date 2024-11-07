@@ -111,7 +111,7 @@ def llava_inference(video_frames,
             temperature=temperature,
             top_p=top_p,
             num_beams=num_beams,
-            max_new_tokens=128,
+            max_new_tokens=256,
             use_cache=True,
             temporal_aggregation=temporal_aggregation,
         )

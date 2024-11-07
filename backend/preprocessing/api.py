@@ -1,22 +1,27 @@
 from fastapi import FastAPI, UploadFile, File
 from preprocessing import preprocess_video
+from pydantic import BaseModel
 import tempfile
 import os
 
 app = FastAPI()
+
+class VideoPath(BaseModel):
+    video_path: str
 
 @app.get("/preprocess/healthcheck")
 def healthcheck():
     return {"status": "healthy"}
 
 @app.post("/preprocess/")
-async def preprocess_video_endpoint(file: UploadFile = File(...)):
+async def preprocess_video_endpoint(video: VideoPath):
     # Sauvegarder temporairement le fichier vidéo reçu
-    input_video_path = f"/app/shared/inputs/{file.filename}"
+    input_video_path = video.video_path
 
-    with open(input_video_path, 'wb') as f:
-        f.write(await file.read())
+    if not os.path.exists(input_video_path):
+        return {"error": "Fichier non trouvé", "path": input_video_path}
 
+    # Appeler la fonction de prétraitement
     processed_video_path = preprocess_video(input_video_path)
-    return {"message": "Vidéo pretraitee avec succes",
-            "processed_video_path": processed_video_path}
+
+    return {"message": "Vidéo prétraitée avec succès", "processed_video_path": processed_video_path}
