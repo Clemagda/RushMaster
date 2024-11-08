@@ -5,7 +5,7 @@ services:
     environment:
       ENVIRONMENT: "CLOUD"
     volumes:
-      - ./shared:/app/shared/inputs
+      - ./shared/inputs:/app/shared/inputs
       - shared-processed:/app/shared/processed
     entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
@@ -64,7 +64,7 @@ services:
     image: excelgeneration
     volumes:
       - shared-processed:/app/shared/processed
-      - shared-outputs:/app/shared/outputs
+      - ./shared/outputs:/app/shared/outputs
     entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
       - app-network
