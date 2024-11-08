@@ -1,27 +1,22 @@
-from fastapi import FastAPI, UploadFile, File
-from preprocessing import preprocess_video
-from pydantic import BaseModel
-import tempfile
-import os
+from fastapi import FastAPI
+from preprocessing import preprocess_all_videos
 
 app = FastAPI()
 
-class VideoPath(BaseModel):
-    video_path: str
 
 @app.get("/preprocess/healthcheck")
 def healthcheck():
     return {"status": "healthy"}
 
+
 @app.post("/preprocess/")
-async def preprocess_video_endpoint(video: VideoPath):
-    # Sauvegarder temporairement le fichier vidéo reçu
-    input_video_path = video.video_path
-
-    if not os.path.exists(input_video_path):
-        return {"error": "Fichier non trouvé", "path": input_video_path}
-
-    # Appeler la fonction de prétraitement
-    processed_video_path = preprocess_video(input_video_path)
-
-    return {"message": "Vidéo prétraitée avec succès", "processed_video_path": processed_video_path}
+async def preprocess_videos():
+    """
+    Endpoint pour traiter toutes les vidéos dans le répertoire d'entrée.
+    Appelle également l'API de génération de fichier Excel une fois le traitement terminé.
+    """
+    try:
+        preprocess_all_videos()  # Appel de la fonction pour traiter toutes les vidéos
+        return {"message": "Toutes les vidéos ont été prétraitées et la génération Excel a été déclenchée."}
+    except Exception as e:
+        return {"error": f"Échec du prétraitement ou de la génération Excel : {str(e)}"}

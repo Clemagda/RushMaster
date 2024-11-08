@@ -1,10 +1,14 @@
-import argparse
-import cv2 # type: ignore
 import os
 import subprocess
+import cv2
+import requests
+import argparse
 
-def preprocess_video(input_path='/app/shared/inputs', output_dir="/app/shared/processed", target_resolution=(336, 336)):
 
+def preprocess_video(input_path, output_dir="/app/shared/processed", target_resolution=(336, 336)):
+    """
+    Pré-traite une seule vidéo en redimensionnant si nécessaire.
+    """
     video_name = os.path.splitext(os.path.basename(input_path))[0]
     output_path = os.path.join(output_dir, f"processed_{video_name}.mp4")
     # Lire la vidéo avec OpenCV
@@ -15,10 +19,10 @@ def preprocess_video(input_path='/app/shared/inputs', output_dir="/app/shared/pr
 
     # Vérifier si un redimensionnement est nécessaire
     if (width, height) != target_resolution:
-        print(f"Redimensionnement de la vidéo à {target_resolution[0]}x{target_resolution[1]}")
-        # Utiliser FFmpeg pour redimensionner la vidéo
+        print(
+            f"Redimensionnement de la vidéo à {target_resolution[0]}x{target_resolution[1]}")
         cmd = [
-            'ffmpeg', '-y', '-loglevel','panic', '-i', input_path, '-vf', 
+            'ffmpeg', '-y', '-loglevel', 'panic', '-i', input_path, '-vf',
             f'scale={target_resolution[0]}:trunc(ow/a/2)*2',
             output_path
         ]
@@ -29,15 +33,34 @@ def preprocess_video(input_path='/app/shared/inputs', output_dir="/app/shared/pr
         subprocess.run(cmd)
 
     cap.release()
-    print(f"VIdéo pré-traitée sauvegardée à {output_path}")
+    print(f"Vidéo pré-traitée sauvegardée à {output_path}")
     return output_path
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Preprocess video for action recognition")
-    parser.add_argument("--input_video", type=str, required=True, help="Path to the input video")
-    parser.add_argument("--output_video", type=str, default='/app/shared/processed/processed_video.mp4', help="Path to save the processed video")
-    return parser.parse_args()
+
+def preprocess_all_videos(input_dir="/app/shared/inputs", output_dir="/app/shared/processed"):
+    """
+    Traite toutes les vidéos dans le répertoire d'entrée et les sauvegarde dans le répertoire de sortie.
+    """
+    video_files = [f for f in os.listdir(input_dir) if f.endswith(
+        ('.mp4', '.mov', '.avi', '.mkv'))]
+    print(f"Vidéos trouvées pour le prétraitement : {video_files}")
+
+    for video_file in video_files:
+        input_path = os.path.join(input_dir, video_file)
+        preprocess_video(input_path, output_dir)
+
+    # Appel de l'API pour générer le fichier Excel une fois tous les fichiers traités
+    try:
+        response = requests.post(
+            "http://csv-generation-service:8000/generate-xlsx/")
+        if response.status_code == 200:
+            print("Génération du fichier Excel déclenchée avec succès.")
+        else:
+            print(
+                f"Erreur lors du déclenchement de la génération Excel: {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"Erreur lors de l'appel à l'API de génération Excel : {e}")
+
 
 if __name__ == "__main__":
-    args = parse_args()
-    preprocess_video(args.input_video, output_path=args.output_video)
+    preprocess_all_videos()
