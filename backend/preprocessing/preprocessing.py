@@ -52,7 +52,7 @@ def preprocess_all_videos(input_dir="/app/shared/inputs", output_dir="/app/share
     # Appel de l'API pour générer le fichier Excel une fois tous les fichiers traités
     try:
         response = requests.post(
-            "http://csv-generation-service:8000/generate-xlsx/")
+            "http://csv-generation-service:8004/generate-xlsx/")
         if response.status_code == 200:
             print("Génération du fichier Excel déclenchée avec succès.")
         else:

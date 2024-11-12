@@ -1,0 +1,405 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: analyse-qualite-service
+  name: analyse-qualite-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: analyse-qualite-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: analyse-qualite-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8001"
+          image: analysequalite
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://analyse-qualite-service:8001/quality_analysis/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: analyse-qualite-service
+          ports:
+            - containerPort: 8001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: analyse-qualite-service
+  name: analyse-qualite-service
+spec:
+  ports:
+    - name: "8001"
+      port: 8001
+      targetPort: 8001
+  selector:
+    io.kompose.service: analyse-qualite-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: csv-generation-service
+  name: csv-generation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: csv-generation-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: csv-generation-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8004"
+          image: excelgeneration
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://csv-generation-service:8004/generate-xlsx/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: csv-generation-service
+          ports:
+            - containerPort: 8004
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/processed
+              name: shared-processed
+            - mountPath: /app/shared/outputs
+              name: shared-outputs
+      restartPolicy: Always
+      volumes:
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: csv-generation-service
+  name: csv-generation-service
+spec:
+  ports:
+    - name: "8004"
+      port: 8004
+      targetPort: 8004
+  selector:
+    io.kompose.service: csv-generation-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: generation-resume-service
+  name: generation-resume-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: generation-resume-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: generation-resume-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8003"
+          env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+          image: generationresume
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://generation-resume-service:8003/generate_summary/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: generation-resume-service
+          ports:
+            - containerPort: 8003
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: generation-resume-service
+  name: generation-resume-service
+spec:
+  ports:
+    - name: "8003"
+      port: 8003
+      targetPort: 8003
+  selector:
+    io.kompose.service: generation-resume-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: preprocessing-service
+  name: preprocessing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: preprocessing-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: preprocessing-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          env:
+            - name: ENVIRONMENT
+              value: CLOUD
+          image: preprocessing
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://preprocessing-service:8000/preprocess/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: preprocessing-service
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/inputs
+              name: shared-inputs
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: preprocessing-service
+  name: preprocessing-service
+spec:
+  ports:
+    - name: "8000"
+      port: 8000
+      targetPort: 8000
+  selector:
+    io.kompose.service: preprocessing-service
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: shared-inputs
+  name: shared-inputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: shared-outputs
+  name: shared-outputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: shared-processed
+  name: shared-processed
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: transcription-audio-service
+  name: transcription-audio-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: transcription-audio-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: transcription-audio-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8002"
+          image: audiotranscription
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://transcription-audio-service:8002/transcribe/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: transcription-audio-service
+          ports:
+            - containerPort: 8002
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: transcription-audio-service
+  name: transcription-audio-service
+spec:
+  ports:
+    - name: "8002"
+      port: 8002
+      targetPort: 8002
+  selector:
+    io.kompose.service: transcription-audio-service

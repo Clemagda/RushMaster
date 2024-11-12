@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: transcription-audio-service
+  name: transcription-audio-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: transcription-audio-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: transcription-audio-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8002"
+          image: audiotranscription
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://transcription-audio-service:8002/transcribe/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: transcription-audio-service
+          ports:
+            - containerPort: 8002
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed

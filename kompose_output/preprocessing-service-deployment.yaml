@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: preprocessing-service
+  name: preprocessing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: preprocessing-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: preprocessing-service
+    spec:
+      containers:
+        - command:
+            - uvicorn
+            - api:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          env:
+            - name: ENVIRONMENT
+              value: CLOUD
+          image: preprocessing
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://preprocessing-service:8000/preprocess/healthcheck || exit 1
+            failureThreshold: 3
+            periodSeconds: 90
+            timeoutSeconds: 5
+          name: preprocessing-service
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/shared/inputs
+              name: shared-inputs
+            - mountPath: /app/shared/processed
+              name: shared-processed
+      restartPolicy: Always
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed

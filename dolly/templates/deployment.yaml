@@ -1,0 +1,57 @@
+{{- range $key, $service := .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $service.name }}
+  labels:
+    app: {{ $service.name }}
+spec:
+  replicas: {{ $service.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $service.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service.name }}
+    spec:
+      containers:
+        - name: {{ $service.name }}
+          image: {{ $service.image }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ $service.containerPort }}
+          env:
+            - name: ENVIRONMENT
+              value: {{ $.Values.global.environment | quote }}
+            {{- if $service.env }}
+            {{- range $key, $value := $service.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ $service.livenessPath }}
+              port: {{ $service.containerPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: {{ $.Values.global.sharedVolumes.inputs }}
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: {{ $.Values.global.sharedVolumes.processed }}
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: {{ $.Values.global.sharedVolumes.outputs }}
+---
+{{- end }}

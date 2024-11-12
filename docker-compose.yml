@@ -5,7 +5,7 @@ services:
     environment:
       ENVIRONMENT: "CLOUD"
     volumes:
-      - ./shared/inputs:/app/shared/inputs
+      - shared-inputs:/app/shared/inputs
       - shared-processed:/app/shared/processed
     entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
@@ -22,11 +22,13 @@ services:
     image: analysequalite
     volumes:
       - shared-processed:/app/shared/processed
-    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8001"]
     networks:
       - app-network
+    ports:
+      - "8001:8001"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://analyse-qualite-service:8000/quality_analysis/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://analyse-qualite-service:8001/quality_analysis/healthcheck || exit 1"]
       interval: 1m30s
       timeout: 5s
       retries: 3
@@ -35,11 +37,13 @@ services:
     image: audiotranscription
     volumes:
       - shared-processed:/app/shared/processed
-    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8002"]
     networks:
       - app-network
+    ports:
+      - "8002:8002"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://transcription-audio-service:8000/transcribe/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://transcription-audio-service:8002/transcribe/healthcheck || exit 1"]
       interval: 1m30s
       timeout: 5s
       retries: 3
@@ -51,11 +55,13 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all 
     volumes:
       - shared-processed:/app/shared/processed
-    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8003"]
     networks:
       - app-network
+    ports:
+      - "8003:8003"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://generation-resume-service:8000/generate_summary/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://generation-resume-service:8003/generate_summary/healthcheck || exit 1"]
       interval: 1m30s
       timeout: 5s
       retries: 3
@@ -64,15 +70,17 @@ services:
     image: excelgeneration
     volumes:
       - shared-processed:/app/shared/processed
-      - ./shared/outputs:/app/shared/outputs
-    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+      - shared-outputs:/app/shared/outputs
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8004"]
     networks:
       - app-network
+    ports:
+      - "8004:8004"
     depends_on:
       preprocessing-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://csv-generation-service:8000/generate-xlsx/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://csv-generation-service:8004/generate-xlsx/healthcheck || exit 1"]
       interval: 1m30s
       timeout: 5s
       retries: 3

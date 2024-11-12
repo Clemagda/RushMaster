@@ -1,0 +1,77 @@
+# Nombre de replicas pour chaque service
+replicaCount: 1
+
+# Configurations générales pour chaque service
+global:
+  imagePullPolicy: Always
+  imageRegistry: 851725364472.dkr.ecr.eu-west-3.amazonaws.com
+  # Variables de configuration générales
+  environment: CLOUD
+  sharedVolumes:
+    inputs: shared-inputs
+    outputs: shared-outputs
+    processed: shared-processed
+
+# Configuration des services
+services:
+  # Service d'analyse de qualité
+  analyseQualiteService:
+    name: analyse-qualite-service
+    image: "851725364472.dkr.ecr.eu-west-3.amazonaws.com/analyse-qualite-service:latest"
+    containerPort: 8001
+    livenessPath: /quality_analysis/healthcheck
+    replicaCount: 1
+
+  # Service de génération CSV
+  csvGenerationService:
+    name: csv-generation-service
+    image: "851725364472.dkr.ecr.eu-west-3.amazonaws.com/csv-generation-service:latest"
+    containerPort: 8004
+    livenessPath: /generate-xlsx/healthcheck
+    replicaCount: 1
+
+  # Service de génération de résumé
+  generationResumeService:
+    name: generation-resume-service
+    image: "851725364472.dkr.ecr.eu-west-3.amazonaws.com/generation-resume-service:latest"
+    containerPort: 8003
+    livenessPath: /generate_summary/healthcheck
+    replicaCount: 1
+    env:
+      NVIDIA_VISIBLE_DEVICES: all  # Variable pour accès GPU
+
+  # Service de prétraitement
+  preprocessingService:
+    name: preprocessing-service
+    image: "851725364472.dkr.ecr.eu-west-3.amazonaws.com/preprocessing-service:latest"
+    containerPort: 8000
+    livenessPath: /preprocess/healthcheck
+    replicaCount: 1
+
+  # Service de transcription audio
+  transcriptionAudioService:
+    name: transcription-audio-service
+    image: "851725364472.dkr.ecr.eu-west-3.amazonaws.com/transcription-audio-service:latest"
+    containerPort: 8002
+    livenessPath: /transcribe/healthcheck
+    replicaCount: 1
+
+# Configuration des volumes partagés avec EBS
+sharedVolumes:
+  inputs:
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteOnce
+    size: 100Gi  # Ajuste la taille selon les besoins
+
+  outputs:
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
+
+  processed:
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi

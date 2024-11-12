@@ -2,13 +2,18 @@ import streamlit as st
 import os
 import shutil
 import requests
+import boto3
+from botocore.exceptions import NoCredentialsError
 
-# Définir le répertoire local de téléversement
-directory = 'shared/inputs'  # sera l'ARN du bucket S3
+# Configuration AWS
+AWS_ACCESS_KEY = 'AKIA4MTWJVT4IFGAESJ7'
+AWS_SECRET_KEY = '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'
+BUCKET_NAME = 'data-rushmaster'
 
-# Créer le répertoire si nécessaire
-if not os.path.exists(directory):
-    os.makedirs(directory)
+# Initialiser le client S3
+s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY,
+                  aws_secret_access_key=AWS_SECRET_KEY)
+
 
 # Interface du frontend Streamlit
 st.title("Application de Traitement de Rush Vidéo - Téléversement des Vidéos")
@@ -19,15 +24,17 @@ uploaded_files = st.file_uploader("Téléversez vos fichiers vidéo ici", type=[
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
-        # Créer le chemin de sortie pour chaque fichier téléversé
-        output_path = os.path.join(directory, uploaded_file.name)
-
-        # Écrire le fichier dans le répertoire ./shared/inputs
-        with open(output_path, "wb") as out_file:
-            # ecrit les fichiers de l'utilisateur dans le bucket S3 monté dans docker-compose
-            shutil.copyfileobj(uploaded_file, out_file)
-
-        st.success(f"Fichier téléversé avec succès : {uploaded_file.name}")
+        try:
+            # Téléverser chaque fichier sur S3
+            s3.upload_fileobj(uploaded_file, BUCKET_NAME,
+                              f"Inputs/{uploaded_file.name}")
+            st.success(
+                f"Fichier téléversé avec succès sur S3 : {uploaded_file.name}")
+        except NoCredentialsError:
+            st.error(
+                "Les informations d'identification AWS sont manquantes ou incorrectes.")
+        except Exception as e:
+            st.error(f"Erreur lors du téléversement : {e}")
 
     # Bouton pour déclencher le prétraitement
     if st.button("Lancer le traitement"):
