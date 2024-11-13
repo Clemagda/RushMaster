@@ -6,9 +6,10 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 
 # Configuration AWS
-AWS_ACCESS_KEY = 'AKIA4MTWJVT4IFGAESJ7'
-AWS_SECRET_KEY = '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'
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
 BUCKET_NAME = 'data-rushmaster'
+preprocessing_url = 'a44aaaaece8284562a6e57bcca24e2c7-222556586.eu-west-3.elb.amazonaws.com'
 
 # Initialiser le client S3
 s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY,
@@ -39,7 +40,8 @@ if uploaded_files:
     # Bouton pour déclencher le prétraitement
     if st.button("Lancer le traitement"):
         with st.spinner("Patience, le traitement est en cours ..."):
-            response = requests.post("http://localhost:8000/preprocess/")
+            response = requests.post(
+                "http://preprocessing_url:8000/preprocess/")
             if response.status_code == 200:
                 st.success(
                     "Le traitement est terminé.")
