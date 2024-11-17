@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upload-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upload-service
+  template:
+    metadata:
+      labels:
+        app: upload-service
+    spec:
+      containers:
+      - name: upload
+        image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/upload-service:latest
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: efs-volume
+          mountPath: /mnt/efs
+      volumes:
+      - name: efs-volume
+        persistentVolumeClaim:
+          claimName: efs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upload-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: upload-service
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
