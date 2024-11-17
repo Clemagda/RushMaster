@@ -1,0 +1,403 @@
+# Source: dolly/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-inputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi  # Ajustez la capacité selon vos besoins
+---
+# Source: dolly/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-outputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi  # Ajustez la capacité selon vos besoins
+---
+# Source: dolly/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-processed
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi  # Ajustez la capacité selon vos besoins
+---
+# Source: dolly/templates/volume.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-inputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+# Source: dolly/templates/volume.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-outputs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+# Source: dolly/templates/volume.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-processed
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Source: dolly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: analyse-qualite-service
+  labels:
+    app: analyse-qualite-service
+spec:
+  selector:
+    app: analyse-qualite-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+  type: ClusterIP
+---
+# Source: dolly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: csv-generation-service
+  labels:
+    app: csv-generation-service
+spec:
+  selector:
+    app: csv-generation-service
+  ports:
+    - protocol: TCP
+      port: 8004
+      targetPort: 8004
+  type: ClusterIP
+---
+# Source: dolly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: generation-resume-service
+  labels:
+    app: generation-resume-service
+spec:
+  selector:
+    app: generation-resume-service
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003
+  type: ClusterIP
+---
+# Source: dolly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: preprocessing-service
+  labels:
+    app: preprocessing-service
+spec:
+  selector:
+    app: preprocessing-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Source: dolly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: transcription-audio-service
+  labels:
+    app: transcription-audio-service
+spec:
+  selector:
+    app: transcription-audio-service
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002
+  type: ClusterIP
+---
+# Source: dolly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyse-qualite-service
+  labels:
+    app: analyse-qualite-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analyse-qualite-service
+  template:
+    metadata:
+      labels:
+        app: analyse-qualite-service
+    spec:
+      containers:
+        - name: analyse-qualite-service
+          image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/analyse-qualite-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+          env:
+            - name: ENVIRONMENT
+              value: "CLOUD"
+          livenessProbe:
+            httpGet:
+              path: /quality_analysis/healthcheck
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs
+---
+# Source: dolly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csv-generation-service
+  labels:
+    app: csv-generation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csv-generation-service
+  template:
+    metadata:
+      labels:
+        app: csv-generation-service
+    spec:
+      containers:
+        - name: csv-generation-service
+          image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/csv-generation-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8004
+          env:
+            - name: ENVIRONMENT
+              value: "CLOUD"
+          livenessProbe:
+            httpGet:
+              path: /generate-xlsx/healthcheck
+              port: 8004
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs
+---
+# Source: dolly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: generation-resume-service
+  labels:
+    app: generation-resume-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: generation-resume-service
+  template:
+    metadata:
+      labels:
+        app: generation-resume-service
+    spec:
+      containers:
+        - name: generation-resume-service
+          image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/generation-resume-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          env:
+            - name: ENVIRONMENT
+              value: "CLOUD"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+          livenessProbe:
+            httpGet:
+              path: /generate_summary/healthcheck
+              port: 8003
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs
+---
+# Source: dolly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preprocessing-service
+  labels:
+    app: preprocessing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: preprocessing-service
+  template:
+    metadata:
+      labels:
+        app: preprocessing-service
+    spec:
+      containers:
+        - name: preprocessing-service
+          image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/preprocessing-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              value: "CLOUD"
+          livenessProbe:
+            httpGet:
+              path: /preprocess/healthcheck
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs
+---
+# Source: dolly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcription-audio-service
+  labels:
+    app: transcription-audio-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transcription-audio-service
+  template:
+    metadata:
+      labels:
+        app: transcription-audio-service
+    spec:
+      containers:
+        - name: transcription-audio-service
+          image: 851725364472.dkr.ecr.eu-west-3.amazonaws.com/transcription-audio-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8002
+          env:
+            - name: ENVIRONMENT
+              value: "CLOUD"
+          livenessProbe:
+            httpGet:
+              path: /transcribe/healthcheck
+              port: 8002
+            initialDelaySeconds: 30
+            periodSeconds: 90
+          volumeMounts:
+            - name: shared-inputs
+              mountPath: /app/shared/inputs
+            - name: shared-processed
+              mountPath: /app/shared/processed
+            - name: shared-outputs
+              mountPath: /app/shared/outputs
+      volumes:
+        - name: shared-inputs
+          persistentVolumeClaim:
+            claimName: shared-inputs
+        - name: shared-processed
+          persistentVolumeClaim:
+            claimName: shared-processed
+        - name: shared-outputs
+          persistentVolumeClaim:
+            claimName: shared-outputs

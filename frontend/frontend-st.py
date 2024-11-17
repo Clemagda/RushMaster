@@ -1,20 +1,11 @@
 import streamlit as st
 import os
-import shutil
 import requests
-import boto3
-from botocore.exceptions import NoCredentialsError
+import time
 
-# Configuration AWS
-AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
-AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
-BUCKET_NAME = 'data-rushmaster'
-preprocessing_url = 'a44aaaaece8284562a6e57bcca24e2c7-222556586.eu-west-3.elb.amazonaws.com'
-
-# Initialiser le client S3
-s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY,
-                  aws_secret_access_key=AWS_SECRET_KEY)
-
+# Configuration URLs et informations
+TRIGGER_LAMBDA_URL = "https://<API-ID>.execute-api.<region>.amazonaws.com/dev/trigger-eks"
+UPLOAD_SERVICE_URL = "http://<LOADBALANCER-URL>/upload"
 
 # Interface du frontend Streamlit
 st.title("Application de Traitement de Rush Vidéo - Téléversement des Vidéos")
@@ -24,30 +15,48 @@ uploaded_files = st.file_uploader("Téléversez vos fichiers vidéo ici", type=[
                                   "mp4", "mov", "avi", "mkv"], accept_multiple_files=True)
 
 if uploaded_files:
-    for uploaded_file in uploaded_files:
-        try:
-            # Téléverser chaque fichier sur S3
-            s3.upload_fileobj(uploaded_file, BUCKET_NAME,
-                              f"Inputs/{uploaded_file.name}")
-            st.success(
-                f"Fichier téléversé avec succès sur S3 : {uploaded_file.name}")
-        except NoCredentialsError:
-            st.error(
-                "Les informations d'identification AWS sont manquantes ou incorrectes.")
-        except Exception as e:
-            st.error(f"Erreur lors du téléversement : {e}")
+    if st.button("Préparer l'environnement de traitement"):
+        with st.spinner("Préparation de l'environnement..."):
+            response = requests.post(TRIGGER_LAMBDA_URL, json={
+                                     "user_id": "user123"})
+            if response.status_code == 200:
+                st.success("Environnement prêt ! Les pods ont été démarrés.")
+            else:
+                st.error(
+                    f"Erreur lors de l'initialisation des pods: {response.text}")
+            # Attendre que les pods soient opérationnels (temps à adapter)
+            time.sleep(20)
+
+    if st.button('Téléverser les fichiers pour le traitement'):
+        for uploaded_file in uploaded_files:
+            with st.spinner(f"Téléversement de {uploaded_file.name} en cours ..."):
+                try:
+                    files = {'file': uploaded_file.getvalue()}
+                    headers = {'user-id': "user123",
+                               'file-name': uploaded_file.name}
+                    upload_response = requests.post(
+                        UPLOAD_SERVICE_URL, files=files, headers=headers)
+
+                    if upload_response.status_code == 200:
+                        st.success(
+                            f"Fichier {uploaded_file.name} téléversé avec succès !")
+                    else:
+                        st.error(
+                            f"Erreur lors du téléversement de {uploaded_file.name} : {upload_response.text}")
+                except Exception as e:
+                    st.error(f"Erreur lors du téléversement : {e}")
 
     # Bouton pour déclencher le prétraitement
     if st.button("Lancer le traitement"):
         with st.spinner("Patience, le traitement est en cours ..."):
             response = requests.post(
-                "http://preprocessing_url:8000/preprocess/")
+                f"http://{UPLOAD_SERVICE_URL}/preprocess/")
             if response.status_code == 200:
                 st.success(
                     "Le traitement est terminé.")
             else:
                 st.error(
-                    "Erreur lors du déclenchement du service de prétraitement.")
+                    f"Erreur lors du déclenchement du service de prétraitement : {response.text}")
 
     # Bouton pour télécharger le fichier Excel généré
     if os.path.exists("./shared/outputs/results.xlsx"):
