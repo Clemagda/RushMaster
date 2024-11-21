@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI  # type: ignore
 from preprocessing import preprocess_all_videos
 
 app = FastAPI()

@@ -1,12 +1,16 @@
-import streamlit as st
+import streamlit as st  # type: ignore
 import os
-import requests
+import requests  # type: ignore
 import time
+
+# TODO: màj des boutons en fonctiond e l'état réel des instances.
+# Tout fluidifier avec un bouton unique mais un affichage de progression des différents étapes
 
 # Configuration URLs et informations
 TRIGGER_LAMBDA_URL = "https://l02i7qlyzc.execute-api.eu-west-3.amazonaws.com/dev/trigger-eks"
 UPLOAD_SERVICE_URL = "http://a1679451e08a945bfb3b1f27b32fd628-2060507120.eu-west-3.elb.amazonaws.com:5000/upload/"
-PREPROCESSING_URL = "http://a886391d631da490d8c5429fb5b61ced-766592315.eu-west-3.elb.amazonaws.com:8000"
+PREPROCESSING_URL = "http://a886391d631da490d8c5429fb5b61ced-766592315.eu-west-3.elb.amazonaws.com:8000/preprocess/"
+STOP_LAMBDA_URL = "https://czsnaevo48.execute-api.eu-west-3.amazonaws.com/dev"
 
 # Initialiser les états dans la session
 if 'environment_ready' not in st.session_state:
@@ -17,6 +21,9 @@ if 'files_uploaded' not in st.session_state:
 
 if 'preprocessing_done' not in st.session_state:
     st.session_state['preprocessing_done'] = False
+
+if 'results_downloaded' not in st.session_state:
+    st.session_state['results_downloaded'] = False
 
 # Interface du frontend Streamlit
 st.title("Application de Traitement de Rush Vidéo - Téléversement des Vidéos")
@@ -73,7 +80,7 @@ if st.session_state['files_uploaded'] and not st.session_state['preprocessing_do
             try:
                 # 1h de traitement prévue
                 response = requests.post(
-                    f"{PREPROCESSING_URL}/preprocess/", timeout=3600)
+                    PREPROCESSING_URL, timeout=3600)  # /preprocess/
                 if response.status_code == 200:
                     st.success("Le traitement est terminé.")
                     st.session_state['preprocessing_done'] = True
@@ -93,3 +100,14 @@ if st.session_state['preprocessing_done']:
                 file_name="results.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+            st.session_state['results_downloaded'] = True
+if st.session_state['results_downloaded']:
+    if st.button("Arrêter l'environnement de traitement"):
+        with st.spinner("Arrêt de l'environnement..."):
+            stop_response = requests.post(
+                STOP_LAMBDA_URL, json={"action": "stop"})
+            if stop_response.status_code == 200:
+                st.success("Environnement arrêté avec succès.")
+            else:
+                st.error(
+                    f"Erreur lors de l'arrêt de l'environnement : {response.text}")
