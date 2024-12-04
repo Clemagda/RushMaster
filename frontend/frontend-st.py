@@ -7,9 +7,13 @@ import time
 # Tout fluidifier avec un bouton unique mais un affichage de progression des différents étapes
 
 # Configuration URLs et informations
-TRIGGER_LAMBDA_URL = "https://l02i7qlyzc.execute-api.eu-west-3.amazonaws.com/dev/trigger-eks"
-UPLOAD_SERVICE_URL = "http://a1679451e08a945bfb3b1f27b32fd628-2060507120.eu-west-3.elb.amazonaws.com:5000/upload/"
-PREPROCESSING_URL = "http://a886391d631da490d8c5429fb5b61ced-766592315.eu-west-3.elb.amazonaws.com:8000/preprocess/"
+TRIGGER_LAMBDA_URL = "https://h6x40qebq0.execute-api.eu-west-2.amazonaws.com/dev/trigger-eks"
+UPLOAD_SERVICE_URL = "http://a63c5f5d9a4cb44b5becdd5e962cdc20-1151764598.eu-west-2.elb.amazonaws.com:5000/upload/"
+# "http://a1679451e08a945bfb3b1f27b32fd628-2060507120.eu-west-3.elb.amazonaws.com:5000/upload/" #ancienne
+
+PREPROCESSING_URL = "http://ac54083482f5e492990dfd3219018752-338662646.eu-west-2.elb.amazonaws.com:8000/preprocess/"
+# "http://a886391d631da490d8c5429fb5b61ced-766592315.eu-west-3.elb.amazonaws.com:8000/preprocess/" ancienne
+
 STOP_LAMBDA_URL = "https://czsnaevo48.execute-api.eu-west-3.amazonaws.com/dev"
 
 # Initialiser les états dans la session

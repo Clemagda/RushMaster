@@ -1,12 +1,16 @@
 import argparse
 import os
 import torch  # type: ignore
+from torch.cuda.amp import autocast  # type: ignore
 from slowfast_llava.llava.model.builder import load_pretrained_model
 from slowfast_llava.llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
 from slowfast_llava.llava.constants import IMAGE_TOKEN_INDEX
 from dataset import load_video
 from prompt import get_prompt
 from moviepy.editor import VideoFileClip  # type: ignore
+
+# Configurer PyTorch pour éviter la fragmentation mémoire
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 global_model = None
 global_tokenizer = None
@@ -70,7 +74,7 @@ def llava_inference(video_frames,
     image_tensor = process_images(video_frames, image_processor, model.config)
 
     # Générer le résumé à partir du modèle
-    with torch.inference_mode():
+    with torch.inference_mode(), autocast():
         output_ids = model.generate(
             input_ids,
             images=image_tensor.to(dtype=torch.float16,
@@ -142,7 +146,14 @@ def run_inference(video_path, conv_mode='vicuna_v1',
         num_frames = get_total_frames(video_path)
 
     # Chargement des frames de la vidéo spécifique
-    video_frames, sizes = load_video(video_path, num_frms=num_frames)
+    else:
+        # Ajuste automatiquement le nombre de frames si mémoire insuffisante
+        try:
+            video_frames, sizes = load_video(video_path, num_frms=num_frames)
+        except torch.cuda.OutOfMemoryError:
+            print("Mémoire GPU insuffisante. Réduction des frames à 25.")
+            video_frames, sizes = load_video(video_path, num_frms=25)
+
     print("===Frames chargées===")
     print("===Generation du résumé===")
     # Génération du résumé
