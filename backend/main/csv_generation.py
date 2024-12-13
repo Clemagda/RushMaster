@@ -7,12 +7,17 @@ OUTPUT_DIR = '/app/shared/outputs'
 PROCESSED_DIR = '/app/shared/processed'
 
 
-def process_video():
+def process_video(user_id):
     """
     Fusionne les résultats des traitements vidéos dans un fichier Excel et l'upload dans le bucket S3.
     """
-    video_files = [os.path.join(PROCESSED_DIR, f) for f in os.listdir(
-        PROCESSED_DIR) if f.endswith(('.mp4', '.mov', '.avi', '.mkv'))]
+    user_processed_dir = os.path.join(PROCESSED_DIR, user_id)
+    user_output_dir = os.path.join(OUTPUT_DIR, user_id)
+    if not os.path.exists(user_output_dir):
+        os.makedirs(user_output_dir)
+
+    video_files = [os.path.join(user_processed_dir, f) for f in os.listdir(user_processed_dir) if f.endswith((".mp4", ".mov", ".avi", ".mkv"))]
+
     results = []
 
     for video_path in video_files:
@@ -57,8 +62,9 @@ def process_video():
     if results:
         df = pd.DataFrame(results)
         print(f"Apercu des resultats : {df.head()}")
-        output_filename = os.path.join(OUTPUT_DIR, "results.xlsx")
+        output_filename = os.path.join(user_output_dir, "results.xlsx")
         df.to_excel(output_filename, index=False)
+        return output_filename
     else:
         print("Aucun résultat à enregistrer.")
 

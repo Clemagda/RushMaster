@@ -5,12 +5,16 @@ import requests
 import argparse
 
 
-def preprocess_video(input_path, output_dir="/app/shared/processed", target_resolution=(336, 336)):
+def preprocess_video(input_path, user_id, base_output_dir="/app/shared/processed", target_resolution=(336, 336)):
     """
     Pré-traite une seule vidéo en redimensionnant si nécessaire.
     """
+    user_output_dir = os.path.join(base_output_dir, user_id)
+    if not os.path.exists(user_output_dir):
+        os.makedirs(user_output_dir)
     video_name = os.path.splitext(os.path.basename(input_path))[0]
-    output_path = os.path.join(output_dir, f"processed_{video_name}.mp4")
+    output_path = os.path.join(user_output_dir, f"processed_{video_name}.mp4")
+
     # Lire la vidéo avec OpenCV
     cap = cv2.VideoCapture(input_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -37,22 +41,24 @@ def preprocess_video(input_path, output_dir="/app/shared/processed", target_reso
     return output_path
 
 
-def preprocess_all_videos(input_dir="/app/shared/inputs", output_dir="/app/shared/processed"):
+def preprocess_all_videos(user_id, base_input_dir="/app/shared/inputs", base_output_dir="/app/shared/processed"):
     """
     Traite toutes les vidéos dans le répertoire d'entrée et les sauvegarde dans le répertoire de sortie.
     """
-    video_files = [f for f in os.listdir(input_dir) if f.endswith(
+    user_input_dir = os.path.join(base_input_dir, user_id)
+    user_output_dir = os.path.join(base_output_dir, user_id)
+    video_files = [f for f in os.listdir(user_input_dir) if f.endswith(
         ('.mp4', '.mov', '.avi', '.mkv'))]
     print(f"Vidéos trouvées pour le prétraitement : {video_files}")
 
     for video_file in video_files:
-        input_path = os.path.join(input_dir, video_file)
-        preprocess_video(input_path, output_dir)
+        input_path = os.path.join(user_input_dir, video_file)
+        preprocess_video(input_path, user_id, base_output_dir)
 
     # Appel de l'API pour générer le fichier Excel une fois tous les fichiers traités
     try:
         response = requests.post(
-            "http://csv-generation-service:8004/generate-xlsx/")
+            "http://csv-generation-service:8004/generate-xlsx/", json={"user_id": user_id})
         if response.status_code == 200:
             print("Génération du fichier Excel déclenchée avec succès.")
         else:

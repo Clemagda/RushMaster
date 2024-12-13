@@ -2,6 +2,7 @@ import streamlit as st  # type: ignore
 import os
 import requests  # type: ignore
 import time
+import uuid
 
 # TODO: màj des boutons en fonctiond e l'état réel des instances.
 # Tout fluidifier avec un bouton unique mais un affichage de progression des différents étapes
@@ -9,11 +10,7 @@ import time
 # Configuration URLs et informations
 TRIGGER_LAMBDA_URL = "https://h6x40qebq0.execute-api.eu-west-2.amazonaws.com/dev/trigger-eks"
 UPLOAD_SERVICE_URL = "http://a63c5f5d9a4cb44b5becdd5e962cdc20-1151764598.eu-west-2.elb.amazonaws.com:5000/upload/"
-# "http://a1679451e08a945bfb3b1f27b32fd628-2060507120.eu-west-3.elb.amazonaws.com:5000/upload/" #ancienne
-
 PREPROCESSING_URL = "http://ac54083482f5e492990dfd3219018752-338662646.eu-west-2.elb.amazonaws.com:8000/preprocess/"
-# "http://a886391d631da490d8c5429fb5b61ced-766592315.eu-west-3.elb.amazonaws.com:8000/preprocess/" ancienne
-
 STOP_LAMBDA_URL = "https://czsnaevo48.execute-api.eu-west-3.amazonaws.com/dev"
 
 # Initialiser les états dans la session
@@ -29,8 +26,15 @@ if 'preprocessing_done' not in st.session_state:
 if 'results_downloaded' not in st.session_state:
     st.session_state['results_downloaded'] = False
 
+if 'user_id' not in st.session_state:
+    st.session_state['user_id'] = str(uuid.uuid4())
+
 # Interface du frontend Streamlit
 st.title("Application de Traitement de Rush Vidéo - Téléversement des Vidéos")
+
+# Identification de l'utilisateur
+user_id = st.session_state['user_id']
+
 
 # Utilisateur peut sélectionner plusieurs fichiers
 uploaded_files = st.file_uploader("Téléversez vos fichiers vidéo ici", type=[
@@ -60,8 +64,9 @@ if st.session_state['environment_ready'] and not st.session_state['files_uploade
                 try:
                     files = {'file': (uploaded_file.name,
                                       uploaded_file, uploaded_file.type)}
+                    data = {"user_id": user_id}
                     upload_response = requests.post(
-                        UPLOAD_SERVICE_URL, files=files)
+                        UPLOAD_SERVICE_URL, files=files, data=data)
 
                     if upload_response.status_code == 200:
                         st.success(
@@ -84,7 +89,7 @@ if st.session_state['files_uploaded'] and not st.session_state['preprocessing_do
             try:
                 # 1h de traitement prévue
                 response = requests.post(
-                    PREPROCESSING_URL, timeout=3600)  # /preprocess/
+                    PREPROCESSING_URL, timeout=3600, json={"user_id": st.session_state['user_id']})  # /preprocess/
                 if response.status_code == 200:
                     st.success("Le traitement est terminé.")
                     st.session_state['preprocessing_done'] = True

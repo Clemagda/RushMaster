@@ -10,7 +10,7 @@ from prompt import get_prompt
 from moviepy.editor import VideoFileClip  # type: ignore
 
 # Configurer PyTorch pour éviter la fragmentation mémoire
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 
 global_model = None
 global_tokenizer = None
