@@ -16,7 +16,8 @@ def process_video(user_id):
     if not os.path.exists(user_output_dir):
         os.makedirs(user_output_dir)
 
-    video_files = [os.path.join(user_processed_dir, f) for f in os.listdir(user_processed_dir) if f.endswith((".mp4", ".mov", ".avi", ".mkv"))]
+    video_files = [os.path.join(user_processed_dir, f) for f in os.listdir(
+        user_processed_dir) if f.endswith((".mp4", ".mov", ".avi", ".mkv"))]
 
     results = []
 
