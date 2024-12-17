@@ -1,18 +1,27 @@
+# Exclure les répertoires __pycache__ partout
+**/__pycache__/
 
-Outputs
-.pytest_cache
-playground
-liuhaotian
-slowfast_llava/llava/_pycache_
-src/_pycache_
-Outputs
-Inputs
-temp
-#Modèles Vosk
-Vosk
+# Exclure les sorties et caches
+Outputs/
+.pytest_cache/
+temp/
+
+# Exclure les répertoires spécifiques
+playground/
+liuhaotian/
+shared/
+fichiers_deploiements_aws/
+Inputs/
+Vosk/
+
+# Fichiers temporaires et archives
 *.tar
-backend/_pycache_
-.env
-shared
-*/_pycache_
+*.zip
 
+# Exclure des sous-répertoires _pycache_ spécifiques
+backend/*/__pycache__/
+backend/generation-resume/__pycache__/
+backend/generation-resume/slowfast_llava/llava/__pycache__/
+
+# Autres exclusions spécifiques
+.env

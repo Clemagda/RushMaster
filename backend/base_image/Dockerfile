@@ -1,5 +1,5 @@
 # Dockerfile de l'image de base
-FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 # Désactiver les interactions et définir le fuseau horaire
 ENV DEBIAN_FRONTEND=noninteractive

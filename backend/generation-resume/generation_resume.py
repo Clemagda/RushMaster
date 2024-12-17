@@ -42,7 +42,7 @@ def load_model_once():
             model_name=model_name,
             device=torch.cuda.current_device(),
             device_map="cuda",
-            rope_scaling_factor=1
+            rope_scaling_factor=2  # 1
         )
         print("===Modèle chargé avec succès.===")
     else:
@@ -74,7 +74,7 @@ def llava_inference(video_frames,
     image_tensor = process_images(video_frames, image_processor, model.config)
 
     # Générer le résumé à partir du modèle
-    with torch.inference_mode(), autocast():
+    with torch.inference_mode():
         output_ids = model.generate(
             input_ids,
             images=image_tensor.to(dtype=torch.float16,
@@ -84,7 +84,7 @@ def llava_inference(video_frames,
             temperature=temperature,
             top_p=top_p,
             num_beams=num_beams,
-            max_new_tokens=256,
+            max_new_tokens=512,
             use_cache=True,
             temporal_aggregation=temporal_aggregation,
         )
@@ -98,7 +98,7 @@ def llava_inference(video_frames,
 
 
 def run_inference(video_path, conv_mode='vicuna_v1',
-                  question="Describe this video in details", num_frames=50,
+                  question="Describe this video in details", num_frames=25,
                   frames_auto=False, temperature=0.2,
                   top_p=None, num_beams=1, temporal_aggregation=None, rope_scaling_factor=1, output_dir='Outputs'):
     """
@@ -145,14 +145,17 @@ def run_inference(video_path, conv_mode='vicuna_v1',
     if frames_auto is True:
         num_frames = get_total_frames(video_path)
 
+    if args.image_aspect_ratio:
+        global_model.config.image_aspect_ratio = args.image_aspect_ratio
+
     # Chargement des frames de la vidéo spécifique
-    else:
-        # Ajuste automatiquement le nombre de frames si mémoire insuffisante
-        try:
-            video_frames, sizes = load_video(video_path, num_frms=num_frames)
-        except torch.cuda.OutOfMemoryError:
-            print("Mémoire GPU insuffisante. Réduction des frames à 25.")
-            video_frames, sizes = load_video(video_path, num_frms=25)
+
+    # Ajuste automatiquement le nombre de frames si mémoire insuffisante
+    try:
+        video_frames, sizes = load_video(video_path, num_frms=num_frames)
+    except torch.cuda.OutOfMemoryError:
+        print("Mémoire GPU insuffisante. Réduction des frames à 25.")
+        video_frames, sizes = load_video(video_path, num_frms=25)
 
     print("===Frames chargées===")
     print("===Generation du résumé===")
@@ -189,7 +192,7 @@ def parse_args():
         "--video_path", help="Chemin vers la vidéo", required=True)
     parser.add_argument("--model_path", type=str,
                         default='liuhaotian/llava-v1.6-vicuna-7b', help="Chemin vers le modèle LLaVA")
-    parser.add_argument("--conv_mode", type=str, default="vicuna_v1")
+    parser.add_argument("--conv_mode", type=str, default="image_seq_v3")
     parser.add_argument("--model_base", type=str,
                         default=None, help="Base du modèle")
     parser.add_argument("--question", type=str,
@@ -197,18 +200,22 @@ def parse_args():
     # Demo tourne sur 50 frames. OOM si utilisation max frames.
     parser.add_argument("--num_frames", type=int, default=50,
                         help="Nombre de frames à utiliser pour l'analyse")
-    parser.add_argument("--temperature", type=float, default=0.2,
-                        help="Température pour la génération de texte")
+    parser.add_argument("--temperature", type=float, default=0,
+                        help="Température pour la génération de texte")  # 0.2
     parser.add_argument("--top_p", type=float, default=None,
                         help="Paramètre top_p pour la génération")
     parser.add_argument("--num_beams", type=int, default=1,
                         help="Nombre de beams pour la génération")
     parser.add_argument("--temporal_aggregation", type=str,
-                        default=None, help="Agrégation temporelle des frames")
+                        default="slowfast-slow_10frms_spatial_1d_max_pool-fast_4x4", help="Agrégation temporelle des frames")
     parser.add_argument("--frames_auto", type=bool, default=False,
                         help="Nombre de frames à utiliser pour l'analyse")
     parser.add_argument("--rope_scaling_factor", type=int,
-                        default=1, help="Facteur de scaling de rope")
+                        default=2, help="Facteur de scaling de rope")  # 1
+    parser.add_argument("--image_aspect_ratio", type=str, default="resize",
+                        help="Rapport d'aspect pour redimensionner les frames")
+    parser.add_argument("--input_structure", type=str,
+                        default="image_seq", help="Structure des frames en entrée")
     return parser.parse_args()
 
 
@@ -223,5 +230,5 @@ if __name__ == "__main__":
                   args.top_p,
                   args.num_beams,
                   args.temporal_aggregation,
-                  args.rope_scaling_factor
+                  args.rope_scaling_factor,
                   )
