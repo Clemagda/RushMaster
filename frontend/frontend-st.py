@@ -68,6 +68,7 @@ if st.session_state['environment_ready'] and not st.session_state['files_uploade
                     upload_response = requests.post(
                         UPLOAD_SERVICE_URL, files=files, data=data)
 
+                    st.write(f"User ID : {user_id}")  # Vérification .
                     if upload_response.status_code == 200:
                         st.success(
                             f"Fichier {uploaded_file.name} téléversé avec succès !")
@@ -89,7 +90,8 @@ if st.session_state['files_uploaded'] and not st.session_state['preprocessing_do
             try:
                 # 1h de traitement prévue
                 response = requests.post(
-                    PREPROCESSING_URL, timeout=3600, json={"user_id": st.session_state['user_id']})  # /preprocess/
+                    # /preprocess/
+                    PREPROCESSING_URL, timeout=3600, json={"user_id": st.session_state['user_id']})
                 if response.status_code == 200:
                     st.success("Le traitement est terminé.")
                     st.session_state['preprocessing_done'] = True

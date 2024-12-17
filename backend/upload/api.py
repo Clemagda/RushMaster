@@ -14,6 +14,11 @@ BASE_DIRECTORY = "/app/shared/inputs"
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), user_id: str = Form(...)):
+    logger.info(f"user_id reçu : {user_id}")
+    if not user_id:
+        raise HTTPException(
+            status_code=400, detail="user_id est manquant ou invalide")
+
     try:
         user_directory = os.path.join(BASE_DIRECTORY, user_id)
 
@@ -30,10 +35,12 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...)):
         with open(file_location, "wb") as f:
             f.write(await file.read())
 
-        logger.info(f"Fichier '{file.filename}' téléversé avec succès à l'emplacement {file_location}.")
+        logger.info("Fichier {} téléversé avec succès à l'emplacement {}".format(
+            file.filename, file_location))
 
         return {"message": f"Fichier '{file.filename}' téléversé avec succès à l'emplacement {file_location}."}
 
     except Exception as e:
         logger.error(f"Erreur lors du téléversement du fichier : {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erreur lors du téléversement du fichier : {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Erreur lors du téléversement du fichier : {str(e)}")

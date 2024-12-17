@@ -5,7 +5,7 @@ import requests
 import argparse
 
 
-def preprocess_video(input_path, user_id, base_output_dir="/app/shared/processed", target_resolution=(336, 336)):
+def preprocess_video(input_path, user_id, base_output_dir="/app/shared/processed", target_resolution=(224, 224)):
     """
     Pré-traite une seule vidéo en redimensionnant si nécessaire.
     """

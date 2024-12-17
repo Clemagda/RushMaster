@@ -97,10 +97,11 @@ def llava_inference(video_frames,
 # Fonction principale pour exécuter l'inférence et générer le résumé pour une seule vidéo
 
 
-def run_inference(video_path, conv_mode='vicuna_v1',
-                  question="Describe this video in details", num_frames=25,
-                  frames_auto=False, temperature=0.2,
-                  top_p=None, num_beams=1, temporal_aggregation=None, rope_scaling_factor=1, output_dir='Outputs'):
+def run_inference(video_path, conv_mode='image_seq_v3',  # 'vicuna_v1'
+                  question="Describe this video in details", num_frames=50,
+                  frames_auto=False, temperature=0,
+                  top_p=None, num_beams=1, temporal_aggregation="slowfast-slow_10frms_spatial_1d_max_pool-fast_4x4", rope_scaling_factor=2,
+                  image_aspect_ratio="resize", input_structure='image_seq'):
     """
     Génère un résumé vidéo en utilisant un modèle pré-entraîné à partir d'une seule vidéo.
 
@@ -115,7 +116,6 @@ def run_inference(video_path, conv_mode='vicuna_v1',
         top_p (float or None): Valeur du paramètre top-p pour le tri des résultats d'inférence (par défaut None).
         num_beams (int): Nombre de faisceaux à utiliser pour la recherche de faisceaux (beam search) lors de la génération du résumé (par défaut 1).
         temporal_aggregation (str or None): Méthode d'agrégation temporelle des frames vidéo (par défaut None).
-        output_dir (str): Répertoire où sauvegarder le résumé généré (par défaut 'Outputs').
         output_name (str): Nom du fichier de sortie pour le résumé (par défaut 'generated_resume').
         rope_scaling_factor (float): Facteur de mise à l'échelle pour le positionnement relatif (rope scaling) (par défaut 1).
 
@@ -124,7 +124,7 @@ def run_inference(video_path, conv_mode='vicuna_v1',
         ValueError: Si une erreur survient lors du chargement des frames vidéo ou du modèle.
 
     Returns:
-        None: La fonction affiche le résumé généré dans la console et le sauvegarde dans un fichier texte si `output_dir` est spécifié.
+        .json: La fonction retourne le résumé généré.
 
     Steps:
         1. Charge le modèle pré-entraîné, le tokenizer et l'image processor.
@@ -134,22 +134,23 @@ def run_inference(video_path, conv_mode='vicuna_v1',
         5. Sauvegarde le résumé dans un fichier texte si le chemin de sortie est fourni.
 
     Example:
-        run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b", question="Describe the actions in this video", num_frames=20)
+        run_inference("video.mp4", model_path="liuhaotian/llava-v1.6-vicuna-7b",
+                      question="Describe the actions in this video", num_frames=20)
     """
     load_model_once()
     global global_model, global_tokenizer, global_image_processor, global_context_len
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
     print("===Chargement de la vidéo===")
     if frames_auto is True:
         num_frames = get_total_frames(video_path)
 
-    if args.image_aspect_ratio:
-        global_model.config.image_aspect_ratio = args.image_aspect_ratio
+    if image_aspect_ratio:
+        global_model.config.image_aspect_ratio = image_aspect_ratio
+
+    if input_structure:
+        global_model.config.input_structure = input_structure
 
     # Chargement des frames de la vidéo spécifique
-
     # Ajuste automatiquement le nombre de frames si mémoire insuffisante
     try:
         video_frames, sizes = load_video(video_path, num_frms=num_frames)
