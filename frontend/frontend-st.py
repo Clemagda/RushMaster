@@ -103,7 +103,7 @@ if st.session_state['files_uploaded'] and not st.session_state['preprocessing_do
 
 # Téléchargement du fichier Excel généré (uniquement si le prétraitement est terminé)
 if st.session_state['preprocessing_done']:
-    if os.path.exists("./shared/outputs/results.xlsx"):
+    if os.path.exists(f"./shared/outputs/{st.session_state['user_id']}/results.xlsx"):
         with open("./shared/outputs/results.xlsx", "rb") as file:
             st.download_button(
                 label="Télécharger le fichier Excel généré",
