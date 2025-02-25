@@ -48,7 +48,7 @@ st.markdown(
 )
 
 # Charger le logo en bannière
-logo_path = "logo_avec_nom.webp"  # Chemin vers l'image de la bannière
+logo_path = "frontend/logo_avec_nom.webp"  # Chemin vers l'image de la bannière
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
     st.image(logo, use_column_width=True)
